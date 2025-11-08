@@ -96,11 +96,11 @@ const PageLayout: React.FC = () => {
             ></div>
             
             {/* Sidebar */}
-            <aside className={`sidebar w-64 flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-40 transform md:relative md:translate-x-0 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                <div className="flex items-center justify-between p-4 h-16 flex-shrink-0">
+            <aside className={`sidebar group w-64 flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-40 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:w-20 hover:md:w-64`}>
+                <div className="flex items-center justify-between p-4 h-16 flex-shrink-0 overflow-hidden">
                     <h1 className="sidebar-header-title flex items-center gap-2">
                         <Zap size={20} className="text-indigo-400" />
-                        <span>Kalina AI</span>
+                        <span className="transition-opacity duration-200 delay-100 md:opacity-0 group-hover:md:opacity-100 whitespace-nowrap">Kalina AI</span>
                     </h1>
                     <button className="md:hidden text-gray-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
                         <X size={24} />
@@ -117,7 +117,7 @@ const PageLayout: React.FC = () => {
                 />
                 
                 {/* Main Content */}
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto pt-16 md:pt-6">
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto pt-20 md:pt-6">
                     <Routes>
                         <Route path="/" element={<MainDashboard />} />
                         <Route path="/agent" element={<AgentAdminPage />} />
