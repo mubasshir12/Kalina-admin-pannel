@@ -20,21 +20,25 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-    public state: ErrorBoundaryState = {
+// FIX: Removed `public` keyword for idiomatic React class component style.
+    state: ErrorBoundaryState = {
         hasError: false
     };
 
-    public static getDerivedStateFromError(_: Error): ErrorBoundaryState {
+// FIX: Removed `public` keyword.
+    static getDerivedStateFromError(_: Error): ErrorBoundaryState {
         // Update state so the next render will show the fallback UI.
         return { hasError: true };
     }
 
-    public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+// FIX: Removed `public` keyword.
+    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         // Log the error to the console, as requested.
         console.error("Kalina AI - Uncaught Application Error:", error, errorInfo);
     }
 
-    public render() {
+// FIX: Removed `public` keyword.
+    render() {
         if (this.state.hasError) {
             // Render a fallback UI when an error is caught
             return (
@@ -117,7 +121,7 @@ const PageLayout: React.FC = () => {
                 />
                 
                 {/* Main Content */}
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto pt-16">
+                <main className="flex-1 overflow-y-auto pt-20 px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
                     <Routes>
                         <Route path="/" element={<MainDashboard />} />
                         <Route path="/agent" element={<AgentAdminPage />} />
