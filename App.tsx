@@ -88,7 +88,7 @@ const PageLayout: React.FC = () => {
     }, [location.pathname]);
 
     return (
-        <div className="flex h-full bg-gray-100">
+        <div className="flex h-full bg-gray-100 overflow-hidden">
             {/* Mobile Overlay */}
             <div 
                 className={`fixed inset-0 bg-gray-900/50 z-30 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}

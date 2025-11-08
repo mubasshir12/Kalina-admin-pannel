@@ -1,4 +1,5 @@
 
+
 import { createClient } from '@supabase/supabase-js';
 // FIX: Import AdvancedAnalyticsData type
 import type { AgentConfig, NewsConfig, MainDashboardData, UserStats, ArticleEngagementData, AdvancedAnalyticsData, BarDataPoint } from '../types';
@@ -167,7 +168,8 @@ export async function fetchUsersData(): Promise<UserStats[]> {
 
     return authUsers.users.map(user => {
         const profile = profilesMap.get(user.id);
-        // FIX: Supabase's user.user_metadata is of type `unknown`. Cast it to a specific shape to access properties safely.
+        // FIX: Supabase ka user.user_metadata 'unknown' type ka hota hai, isliye direct property access (like .full_name) par error aata hai.
+        // Isko safely handle karne ke liye, hum ise ek known shape mein cast kar rahe hain.
         const metadata = (user.user_metadata as { full_name?: string; avatar_url?: string; }) || {};
         return {
             user: {
