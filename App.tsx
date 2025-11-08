@@ -117,7 +117,7 @@ const PageLayout: React.FC = () => {
                 />
                 
                 {/* Main Content */}
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto pt-16 md:pt-6">
                     <Routes>
                         <Route path="/" element={<MainDashboard />} />
                         <Route path="/agent" element={<AgentAdminPage />} />

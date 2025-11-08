@@ -8,7 +8,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ pageTitle, onMenuClick }) => {
     return (
-        <header className="md:hidden bg-white/80 backdrop-blur-lg p-4 flex items-center gap-4 flex-shrink-0 border-b border-gray-200 sticky top-0 z-20">
+        <header className="md:hidden bg-white/80 backdrop-blur-lg px-4 flex items-center gap-4 flex-shrink-0 border-b border-gray-200 fixed top-0 w-full z-20 h-16">
             <button className="text-gray-600 hover:text-gray-900" onClick={onMenuClick}>
                 <PanelLeft size={24} />
             </button>
