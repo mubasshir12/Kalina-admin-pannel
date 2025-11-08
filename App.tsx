@@ -68,6 +68,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 const PageLayout: React.FC = () => {
     const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [pageTitle, setPageTitle] = useState('Overview');
 
     useEffect(() => {
@@ -100,17 +101,21 @@ const PageLayout: React.FC = () => {
             ></div>
             
             {/* Sidebar */}
-            <aside className={`sidebar w-64 flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-40 transform md:relative md:translate-x-0 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <aside className={`sidebar w-64 flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-40 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'}`}>
                 <div className="flex items-center justify-between p-4 h-16 flex-shrink-0">
-                    <h1 className="sidebar-header-title flex items-center gap-2">
-                        <Zap size={20} className="text-indigo-400" />
-                        <span>Kalina AI</span>
+                    <h1 className={`sidebar-header-title flex items-center gap-2 ${isSidebarCollapsed ? 'md:justify-center md:w-full' : ''}`}>
+                        <Zap size={20} className="text-indigo-400 shrink-0" />
+                        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Kalina AI</span>
                     </h1>
                     <button className="md:hidden text-gray-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
                         <X size={24} />
                     </button>
                 </div>
-                <Sidebar closeSidebar={() => setIsSidebarOpen(false)} />
+                <Sidebar 
+                    closeSidebar={() => setIsSidebarOpen(false)} 
+                    isCollapsed={isSidebarCollapsed}
+                    onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                />
             </aside>
 
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -118,6 +123,7 @@ const PageLayout: React.FC = () => {
                 <Header 
                     pageTitle={pageTitle}
                     onMenuClick={() => setIsSidebarOpen(true)}
+                    isCollapsed={isSidebarCollapsed}
                 />
                 
                 {/* Main Content */}
