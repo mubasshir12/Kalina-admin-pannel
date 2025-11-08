@@ -110,14 +110,14 @@ const PageLayout: React.FC = () => {
             </aside>
 
             <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Mobile Header */}
+                {/* Header for all screens */}
                 <Header 
                     pageTitle={pageTitle}
                     onMenuClick={() => setIsSidebarOpen(true)}
                 />
                 
                 {/* Main Content */}
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto pt-16 md:pt-6">
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto pt-16">
                     <Routes>
                         <Route path="/" element={<MainDashboard />} />
                         <Route path="/agent" element={<AgentAdminPage />} />
