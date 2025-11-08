@@ -1,7 +1,27 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+
+// --- Global Error Handling ---
+
+// Catch unhandled promise rejections (e.g., from async functions, like Supabase calls)
+window.addEventListener('unhandledrejection', event => {
+  console.error('Kalina AI - Unhandled Promise Rejection:', event.reason);
+});
+
+// Catch other synchronous JavaScript errors that might not be in the React tree
+window.onerror = (message, source, lineno, colno, error) => {
+    console.error('Kalina AI - Global Unhandled Error:', {
+        message,
+        source,
+        lineno,
+        colno,
+        error
+    });
+    // We are already logging it, so this avoids duplicate messages in some browsers.
+    return true; 
+};
+
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
