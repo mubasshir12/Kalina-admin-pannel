@@ -20,25 +20,22 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-    // FIX: Removed `public` keyword for idiomatic React/TypeScript style.
     state: ErrorBoundaryState = {
         hasError: false
     };
 
-    // FIX: Removed `public` keyword.
     static getDerivedStateFromError(_: Error): ErrorBoundaryState {
         // Update state so the next render will show the fallback UI.
         return { hasError: true };
     }
 
-    // FIX: Removed `public` keyword.
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         // Log the error to the console, as requested.
         console.error("Kalina AI - Uncaught Application Error:", error, errorInfo);
     }
 
-    // FIX: Removed `public` keyword to ensure `this` context is correctly bound.
-    render() {
+    // FIX: In a React class component, `this` is automatically bound for lifecycle methods. However, to resolve a potential type inference issue with some linters, the `render` method is defined as a public class property using an arrow function. This ensures the `this` context is lexically bound, which can prevent "property does not exist" errors.
+    public render = (): ReactNode => {
         if (this.state.hasError) {
             // Render a fallback UI when an error is caught
             return (

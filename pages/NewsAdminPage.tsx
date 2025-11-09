@@ -1,8 +1,6 @@
-
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ConfirmationModal, LogDetailView } from '../components/ui';
+import { ConfirmationModal, BatchActionToolbar } from '../components/ui';
 import { NewsAdminPageSkeleton } from '../components/skeletons';
 import { fetchNewsAdminData, fetchNewsEngagementData, deleteNewsLog, deleteNewsLogsBatch } from '../services/supabaseService';
 import type { NewsLog, NewsConfig, ArticleEngagementData } from '../types';
@@ -10,24 +8,8 @@ import NewsAnalytics from '../components/news/NewsAnalytics';
 import NewsLogs from '../components/news/NewsLogs';
 import NewsSettings from '../components/news/NewsSettings';
 import NewsEngagement from '../components/news/NewsEngagement';
-import { X, Trash2 } from 'lucide-react';
+import NewsLogDetail from '../components/news/NewsLogDetail';
 
-const BatchActionToolbar: React.FC<{
-    selectedCount: number;
-    onCancel: () => void;
-    onDelete: () => void;
-}> = ({ selectedCount, onCancel, onDelete }) => (
-    <div className="fixed bottom-4 right-4 z-50 bg-slate-800 text-white rounded-lg shadow-2xl flex items-center gap-4 p-3 animate-fade-in-up">
-        <span className="font-bold text-sm px-2">{selectedCount} selected</span>
-        <button onClick={onDelete} className="btn btn-danger flex items-center gap-2 !py-2 !px-3">
-            <Trash2 size={16} />
-            Delete
-        </button>
-        <button onClick={onCancel} className="text-slate-400 hover:text-white transition-colors p-2 rounded-full hover:bg-slate-700" aria-label="Cancel selection">
-            <X size={18} />
-        </button>
-    </div>
-);
 
 const NewsAdminPage: React.FC = () => {
     const location = useLocation();
@@ -208,7 +190,7 @@ const NewsAdminPage: React.FC = () => {
 
     const renderViewContent = () => {
         if (view === 'logs' && selectedLog) {
-            return <LogDetailView log={selectedLog} onBack={() => setSelectedLogId(null)} />;
+            return <NewsLogDetail log={selectedLog} onBack={() => setSelectedLogId(null)} />;
         }
 
         switch (view) {

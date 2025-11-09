@@ -37,6 +37,25 @@
         --pill-nav-text: #6b7280;
         --pill-nav-active-bg: #ffffff;
         --pill-nav-active-text: #1f2937;
+
+        /* Status Pill Variables */
+        --status-success-bg: #dcfce7;
+        --status-success-text: #166534;
+        --status-warning-bg: #fef3c7;
+        --status-warning-text: #92400e;
+        --status-info-bg: #e0f2fe;
+        --status-info-text: #075985;
+        --status-neutral-bg: #f1f5f9;
+        --status-neutral-text: #475569;
+        
+        /* Agent Structured Views */
+        --subtle-bg: #f9fafb;
+        --subtle-border: #e5e7eb;
+        --accent-text: #4f46e5;
+        --icon-bg-blue: #dbeafe;
+        --icon-fg-blue: #2563eb;
+        --icon-bg-purple: #ede9fe;
+        --icon-fg-purple: #7c3aed;
     }
 
     html.dark {
@@ -61,6 +80,25 @@
         --sidebar-text-secondary: #A1A1AA;
         --sidebar-text-muted: #71717A;
         --sidebar-link-hover-bg: #27272A;
+
+        /* Status Pill Variables */
+        --status-success-bg: rgba(22, 101, 52, 0.5);
+        --status-success-text: #86efac;
+        --status-warning-bg: rgba(120, 53, 15, 0.5);
+        --status-warning-text: #fcd34d;
+        --status-info-bg: rgba(12, 74, 110, 0.5);
+        --status-info-text: #7dd3fc;
+        --status-neutral-bg: #52525b;
+        --status-neutral-text: #d4d4d8;
+
+        /* Agent Structured Views */
+        --subtle-bg: #3f3f46;
+        --subtle-border: #52525b;
+        --accent-text: #818cf8;
+        --icon-bg-blue: rgba(59, 130, 246, 0.2);
+        --icon-fg-blue: #93c5fd;
+        --icon-bg-purple: rgba(168, 85, 247, 0.2);
+        --icon-fg-purple: #c4b5fd;
     }
     
     /* --- FIX: Dark Mode Border, Background, and Accent Overrides --- */
@@ -555,6 +593,31 @@
         animation: fadeInUp 0.3s ease-out forwards;
     }
     
+    /* --- Agent Log Structured View Utilities --- */
+    .structured-view-panel {
+        background-color: var(--subtle-bg);
+        border: 1px solid var(--subtle-border);
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    .structured-view-panel.theme-aware-hover:hover {
+        filter: brightness(0.98);
+    }
+    html.dark .structured-view-panel.theme-aware-hover:hover {
+        filter: brightness(1.1);
+    }
+    .accent-text {
+        color: var(--accent-text);
+    }
+    .structured-list-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 0.375rem;
+        background-color: var(--subtle-bg);
+    }
+
     </style>
 <script type="importmap">
 {

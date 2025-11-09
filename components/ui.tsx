@@ -4,19 +4,15 @@ import type { AgentLog, NewsLog } from '../types';
 import { 
     ChevronDown, 
     CalendarDays, 
-    CalendarRange, 
     Clock, 
     Hash, 
-    Rocket, 
     Timer, 
-    Newspaper,
     Terminal,
     Code,
     List,
     Info,
     Copy,
     Check,
-    ArrowLeft,
     AlertTriangle,
     Trash2,
     X,
@@ -62,26 +58,9 @@ export const timeAgo = (dateInput: string | Date): string => {
     return Math.floor(seconds) + " seconds ago";
 };
 
-// === New Log Detail View Components ===
+// === Shared Log Detail View Components ===
 
-interface LogDetailViewProps {
-    log: AgentLog | NewsLog | null;
-    onBack: () => void;
-}
-
-const MetadataListItem: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode; }> = ({ icon, label, value }) => (
-    <div className="flex items-start justify-between py-3">
-        <div className="flex items-center gap-3 text-sm">
-            <div className="w-5 flex items-center justify-center text-slate-400">{icon}</div>
-            <span className="font-medium text-slate-600">{label}</span>
-        </div>
-        <div className="text-right font-semibold text-slate-800 text-sm max-w-[60%] truncate">
-            {value}
-        </div>
-    </div>
-);
-
-const LogContentPanel: React.FC<{ title: string; children: React.ReactNode; copyText: string; icon: React.ReactNode }> = ({ title, children, copyText, icon }) => {
+export const LogContentPanel: React.FC<{ title: string; children: React.ReactNode; copyText: string; icon: React.ReactNode }> = ({ title, children, copyText, icon }) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {
@@ -107,120 +86,13 @@ const LogContentPanel: React.FC<{ title: string; children: React.ReactNode; copy
                     {copied ? <Check size={16} /> : <Copy size={16} />}
                 </button>
             </div>
-            <div className="p-4 bg-white text-sm flex-grow min-h-0">
+            <div className="p-4 text-sm flex-grow min-h-0 bg-[var(--card-bg)]">
                 {children}
             </div>
         </div>
     );
 };
 
-export const LogDetailView: React.FC<LogDetailViewProps> = ({ log, onBack }) => {
-    if (!log) return null;
-
-    const isAgentLog = 'agent_name' in log;
-    const isSuccess = (status: string) => status.toLowerCase().includes('success');
-    
-    const articlesUpdated = !isAgentLog ? log.summary?.find(s => s.includes('Total Articles Updated'))?.split(': ')[1] || 'N/A' : 'N/A';
-    
-    const logDate = new Date(log.created_at);
-    const dateString = logDate.toLocaleDateString(undefined, {
-        year: 'numeric', month: 'long', day: 'numeric'
-    });
-    const fullTimestamp = logDate.toLocaleString();
-
-    const commonMetadata = [
-        { 
-            icon: <CalendarDays size={18} />, 
-            label: 'Date', 
-            value: dateString 
-        },
-        { 
-            icon: <Clock size={18} />, 
-            label: 'Time', 
-            value: (
-                <span data-tooltip={fullTimestamp}>
-                    {timeAgo(logDate)}
-                </span>
-            )
-        },
-        { icon: <Hash size={18} />, label: 'Log ID', value: log.id }
-    ];
-
-    const metadataItems = isAgentLog ? [
-        { icon: <Rocket size={18} />, label: 'Agent', value: (log as AgentLog).agent_name },
-        { icon: <Timer size={18} />, label: 'Latency', value: `${(log as AgentLog).latency_ms} ms` },
-        ...commonMetadata
-    ] : [
-        { icon: <Timer size={18} />, label: 'Duration', value: `${((log as NewsLog).duration_ms / 1000).toFixed(2)} s` },
-        { icon: <Newspaper size={18} />, label: 'Articles Updated', value: articlesUpdated },
-        ...commonMetadata
-    ];
-
-    const contentPanels = isAgentLog ? (
-        <>
-            <LogContentPanel title="Prompt" icon={<Terminal size={18} />} copyText={(log as AgentLog).prompt}>
-                <div className="whitespace-pre-wrap font-sans leading-relaxed h-full overflow-y-auto">{(log as AgentLog).prompt}</div>
-            </LogContentPanel>
-            <LogContentPanel title="Response" icon={<Code size={18} />} copyText={JSON.stringify((log as AgentLog).response, null, 2)}>
-                <pre className="whitespace-pre-wrap bg-slate-900 text-slate-100 p-3 rounded-md text-xs h-full overflow-y-auto">{JSON.stringify((log as AgentLog).response, null, 2)}</pre>
-            </LogContentPanel>
-        </>
-    ) : (
-        <>
-            <LogContentPanel title="Summary" icon={<List size={18} />} copyText={JSON.stringify((log as NewsLog).summary, null, 2)}>
-                <pre className="whitespace-pre-wrap bg-slate-900 text-slate-100 p-3 rounded-md text-xs h-full overflow-y-auto">{JSON.stringify((log as NewsLog).summary, null, 2)}</pre>
-            </LogContentPanel>
-            <LogContentPanel title="Details" icon={<Info size={18} />} copyText={(log as NewsLog).details || ''}>
-                <pre className="whitespace-pre-wrap bg-slate-900 text-slate-100 p-3 rounded-md text-xs h-full overflow-y-auto">{(log as NewsLog).details || 'No detailed logs available.'}</pre>
-            </LogContentPanel>
-        </>
-    );
-
-    const errorMessagePanel = isAgentLog && (log as AgentLog).error_message ? (
-        <div className="panel-card border-l-4 border-red-500 bg-red-50/80 !p-4">
-            <div className="flex items-center gap-3">
-                <AlertTriangle size={18} className="text-red-600" />
-                <h4 className="font-bold text-red-800">Error Message</h4>
-            </div>
-            <p className="text-sm text-red-700 mt-2 font-mono pl-8">{(log as AgentLog).error_message}</p>
-        </div>
-    ) : null;
-
-    return (
-        <div className="max-w-7xl mx-auto">
-            {/* Header with back button */}
-            <div className="mb-6 flex items-center gap-4">
-                <button onClick={onBack} className="btn btn-secondary">
-                    <ArrowLeft size={16} />
-                    <span>Back to Logs</span>
-                </button>
-                <h2 className="text-2xl font-bold text-slate-800">Log Details</h2>
-            </div>
-
-            {/* Main layout for all content */}
-            <div className="flex flex-col gap-6">
-                
-                {/* Metadata Card (always on top) */}
-                <PanelCard className="!p-0">
-                    <div className={`p-4 border-b-4 ${isSuccess(log.status) ? 'border-green-500' : 'border-red-500'}`}>
-                        <span className={`status-badge ${isSuccess(log.status) ? 'success' : 'failure'}`}>{log.status}</span>
-                    </div>
-                    <div className="p-4 divide-y divide-slate-100">
-                        {metadataItems.map(item => <MetadataListItem key={item.label} {...item} />)}
-                    </div>
-                </PanelCard>
-
-                {/* Error Message Panel if it exists (also on top) */}
-                {errorMessagePanel}
-
-                {/* Content Panels Grid (side-by-side on md+) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {contentPanels}
-                </div>
-            </div>
-        </div>
-    );
-};
 
 export const CustomDropdown: React.FC<{
     options: string[];
@@ -492,7 +364,7 @@ export const DateRangeFilter: React.FC<{
                             : 'btn-secondary'
                     }`}
                 >
-                    <CalendarRange size={16} className="flex-shrink-0" />
+                    <CalendarDays size={16} className="flex-shrink-0" />
                     <span className="truncate">{getCustomDisplayLabel()}</span>
                 </button>
             </div>

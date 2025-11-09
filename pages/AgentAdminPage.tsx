@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ConfirmationModal, BatchActionToolbar, LogDetailView } from '../components/ui';
+import { ConfirmationModal, BatchActionToolbar } from '../components/ui';
+import AgentLogDetail from '../components/agent/AgentLogDetail';
 import { AgentAdminPageSkeleton } from '../components/skeletons';
 import { fetchAgentData, deleteAgentLog, deleteAgentLogsBatch } from '../services/supabaseService';
 import type { AgentLog, AgentConfig } from '../types';
@@ -227,7 +228,7 @@ const AgentAdminPage: React.FC = () => {
 
     const renderViewContent = () => {
         if (view === 'logs' && selectedLog) {
-            return <LogDetailView log={selectedLog} onBack={() => setSelectedLogId(null)} />;
+            return <AgentLogDetail log={selectedLog} onBack={() => setSelectedLogId(null)} />;
         }
         
         switch(view) {

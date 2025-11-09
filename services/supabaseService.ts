@@ -170,13 +170,12 @@ export async function fetchUsersData(): Promise<UserStats[]> {
         const profile = profilesMap.get(user.id);
         // Supabase's user.user_metadata is of type 'unknown', so direct property access (like .full_name) causes an error.
         // To handle this safely, we cast it to a known shape.
+        // FIX: Cast user.user_metadata to a known type to safely access its properties, resolving the 'does not exist on type unknown' errors.
         const metadata = (user.user_metadata as { full_name?: string; avatar_url?: string; }) || {};
         return {
             user: {
                 id: user.id,
-                // FIX: Use the safely cast `metadata` object instead of accessing `user.user_metadata` directly.
                 full_name: profile?.full_name || metadata.full_name || 'N/A',
-                // FIX: Use the safely cast `metadata` object instead of accessing `user.user_metadata` directly.
                 avatar_url: profile?.avatar_url || metadata.avatar_url || '',
                 email: user.email || 'N/A',
                 created_at: user.created_at,
