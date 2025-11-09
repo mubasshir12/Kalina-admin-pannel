@@ -132,19 +132,17 @@ const MainDashboard: React.FC = () => {
                     borderColor="border-red-500"
                 />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                 <PanelCard className="lg:col-span-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <PanelCard>
                     <h3 className="font-semibold mb-4">API Usage Distribution</h3>
                     <ApiDistributionChart agentCount={data.totalAgentRequests} newsCount={data.totalNewsUpdateRequests} />
                 </PanelCard>
-                <div className="lg:col-span-2 space-y-8">
-                    <PanelCard>
-                        <h3 className="font-semibold mb-4">Overall API Success Rate</h3>
-                        <SuccessRateChart successRate={successRate} />
-                    </PanelCard>
-                    <RecentActivityFeed activity={data.recentActivity} />
-                </div>
+                <PanelCard>
+                    <h3 className="font-semibold mb-4">Overall API Success Rate</h3>
+                    <SuccessRateChart successRate={successRate} />
+                </PanelCard>
             </div>
+            <RecentActivityFeed activity={data.recentActivity} />
         </div>
     );
 };
