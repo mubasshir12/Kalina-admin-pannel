@@ -129,7 +129,6 @@ export const SystemHealth: React.FC<AnalyticsProps> = ({ data }) => (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
              <StatCard title="Summarization Failures" value={data.summarizationFailureCount} description="Conversations that failed to summarize" icon={<HeartCrack size={24} />} borderColor="border-red-600" />
             <StatCard title="Cached Articles" value={data.articleCacheCount} description="Unique articles in cache" icon={<Database size={24} />} borderColor="border-lime-500" />
-            <StatCard title="Dead-End Conversations" value={data.deadEndConversationCount} description="Conversations with no AI response" icon={<MessageSquareOff size={24} />} borderColor="border-orange-500" />
         </div>
     </div>
 );

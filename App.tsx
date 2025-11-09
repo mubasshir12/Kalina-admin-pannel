@@ -7,6 +7,7 @@ import AgentAdminPage from './pages/AgentAdminPage';
 import NewsAdminPage from './pages/NewsAdminPage';
 import UsersPage from './pages/UsersPage';
 import AdvancedAnalyticsPage from './pages/AdvancedAnalyticsPage';
+import SettingsPage from './pages/SettingsPage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
@@ -34,7 +35,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         console.error("Kalina AI - Uncaught Application Error:", error, errorInfo);
     }
 
-    // FIX: In a React class component, `this` is automatically bound for lifecycle methods. However, to resolve a potential type inference issue with some linters, the `render` method is defined as a public class property using an arrow function. This ensures the `this` context is lexically bound, which can prevent "property does not exist" errors.
+    // FIX: Class methods can have `this` context issues. Converting `render` to an arrow function ensures `this` is always correctly bound to the component instance, so `this.props` and `this.state` are always available.
     public render = (): ReactNode => {
         if (this.state.hasError) {
             // Render a fallback UI when an error is caught
@@ -81,6 +82,9 @@ const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ them
                 break;
             case '/advanced-analytics':
                 setPageTitle('Insights');
+                break;
+            case '/settings':
+                setPageTitle('Settings');
                 break;
             case '/':
             default:
@@ -132,6 +136,7 @@ const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ them
                         <Route path="/news" element={<NewsAdminPage />} />
                         <Route path="/users" element={<UsersPage />} />
                         <Route path="/advanced-analytics" element={<AdvancedAnalyticsPage />} />
+                        <Route path="/settings" element={<SettingsPage />} />
                     </Routes>
                 </main>
             </div>

@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { PanelCard, CustomDropdown, DateRangeFilter } from '../components/ui';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { PanelCard, CustomDropdown, DateRangeFilter, ConfirmationModal, BatchActionToolbar } from '../components/ui';
 import { UsersPageSkeleton } from '../components/skeletons';
-import { fetchUsersData } from '../services/supabaseService';
+import { fetchUsersData, deleteUser, deleteUsersBatch } from '../services/supabaseService';
 import type { UserStats } from '../types';
-import { Search } from 'lucide-react';
+import { Search, Trash2, CheckSquare, Square } from 'lucide-react';
 
 const stringToColor = (str: string): string => {
     let hash = 0;
@@ -25,20 +25,28 @@ const UsersPage: React.FC = () => {
     const [sortOption, setSortOption] = useState('newest');
     const [dateRange, setDateRange] = useState<{ startDate: Date | null, endDate: Date | null }>({ startDate: null, endDate: null });
 
-    useEffect(() => {
-        const loadUsers = async () => {
-            setLoading(true);
-            try {
-                const data = await fetchUsersData();
-                setUsers(data);
-            } catch (error) {
-                console.error("Failed to fetch users data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadUsers();
+    // State for deletion and selection
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{ ids: string[]; isBatch: boolean } | null>(null);
+    const pressTimer = useRef<number | null>(null);
+    const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
+
+    const loadUsers = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await fetchUsersData();
+            setUsers(data);
+        } catch (error) {
+            console.error("Failed to fetch users data:", error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        loadUsers();
+    }, [loadUsers]);
 
     const processedUsers = useMemo(() => {
         const term = searchTerm.toLowerCase();
@@ -80,6 +88,92 @@ const UsersPage: React.FC = () => {
 
         return processed;
     }, [users, searchTerm, sortOption, dateRange]);
+    
+    // --- Deletion and Selection Handlers ---
+
+    const triggerHapticFeedback = () => {
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(20);
+        }
+    };
+
+    const handleDeleteRequest = (userId: string) => {
+        setDeleteConfirmation({ ids: [userId], isBatch: false });
+    };
+
+    const handleBatchDeleteRequest = () => {
+        if (selectedUsers.size > 0) {
+            setDeleteConfirmation({ ids: Array.from(selectedUsers), isBatch: true });
+        }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteConfirmation) return;
+
+        const { ids, isBatch } = deleteConfirmation;
+        const { error } = isBatch
+            ? await deleteUsersBatch(ids)
+            : await deleteUser(ids[0]);
+        
+        setDeleteConfirmation(null);
+
+        if (error) {
+            alert(`Failed to delete user(s): ${(error as Error).message}`);
+        } else {
+            if (isBatch) {
+                handleCancelSelection();
+            }
+            loadUsers(); // Refresh data on success
+        }
+    };
+    
+    const handleStartSelection = (userId: string) => {
+        triggerHapticFeedback();
+        setIsSelectionMode(true);
+        setSelectedUsers(new Set([userId]));
+    };
+
+    const handleToggleSelection = (userId: string) => {
+        triggerHapticFeedback();
+        const newSelection = new Set(selectedUsers);
+        if (newSelection.has(userId)) {
+            newSelection.delete(userId);
+        } else {
+            newSelection.add(userId);
+        }
+        
+        if (newSelection.size === 0) {
+            setIsSelectionMode(false);
+        }
+        setSelectedUsers(newSelection);
+    };
+
+    const handleCancelSelection = () => {
+        setIsSelectionMode(false);
+        setSelectedUsers(new Set());
+    };
+
+    const handleSelectAll = () => {
+        triggerHapticFeedback();
+        const allUserIds = processedUsers.map(u => u.user.id);
+        if (selectedUsers.size === allUserIds.length) {
+            setSelectedUsers(new Set());
+            setIsSelectionMode(false);
+        } else {
+            setSelectedUsers(new Set(allUserIds));
+            setIsSelectionMode(true);
+        }
+    };
+
+    useEffect(() => {
+        if (selectAllCheckboxRef.current) {
+            const isPartiallySelected = selectedUsers.size > 0 && selectedUsers.size < processedUsers.length;
+            selectAllCheckboxRef.current.indeterminate = isPartiallySelected;
+        }
+    }, [selectedUsers, processedUsers.length]);
+
+    const isAllSelected = processedUsers.length > 0 && selectedUsers.size === processedUsers.length;
+
 
     if (loading) {
         return <UsersPageSkeleton />;
@@ -89,6 +183,7 @@ const UsersPage: React.FC = () => {
         const { id, full_name, avatar_url, email, created_at } = userStat.user;
         const { conversation_count, ltm_count, code_snippet_count } = userStat;
         
+        const isSelected = selectedUsers.has(id);
         const firstLetter = (full_name || email || 'A').charAt(0).toUpperCase();
         const bgColor = stringToColor(full_name || email || id);
         const fallbackAvatar = `https://api.dicebear.com/8.x/initials/svg?seed=${firstLetter}&backgroundColor=${bgColor}&textColor=ffffff&fontSize=40`;
@@ -99,6 +194,31 @@ const UsersPage: React.FC = () => {
                 target.src = fallbackAvatar;
             }
         };
+
+        const handlePointerDown = () => {
+            if (isSelectionMode) return;
+            pressTimer.current = window.setTimeout(() => {
+                handleStartSelection(id);
+                pressTimer.current = null;
+            }, 1000);
+        };
+
+        const handlePointerUp = () => {
+            if (pressTimer.current) {
+                clearTimeout(pressTimer.current);
+                pressTimer.current = null;
+            }
+        };
+
+        const handleRowClick = () => {
+            if (pressTimer.current) {
+                clearTimeout(pressTimer.current);
+                pressTimer.current = null;
+            }
+            if (isSelectionMode) {
+                handleToggleSelection(id);
+            }
+        };
         
         const StatCell: React.FC<{ value: number }> = ({ value }) => (
             <td className="p-4 border-b border-slate-200 text-slate-600 text-center font-semibold">
@@ -107,7 +227,24 @@ const UsersPage: React.FC = () => {
         );
 
         return (
-             <tr className="hover:bg-slate-50 transition-colors duration-200">
+             <tr 
+                className={`transition-colors duration-200 select-none ${isSelected ? 'bg-indigo-50 hover:bg-indigo-100' : 'hover:bg-slate-50'}`}
+                onClick={handleRowClick}
+                onPointerDown={handlePointerDown}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerUp}
+                style={{ cursor: isSelectionMode ? 'pointer' : 'default' }}
+            >
+                {isSelectionMode && (
+                    <td className="p-4 border-b border-slate-200 text-center">
+                        <button 
+                            className="p-2"
+                            aria-label={isSelected ? 'Deselect user' : 'Select user'}
+                        >
+                            {isSelected ? <CheckSquare size={18} className="text-indigo-600" /> : <Square size={18} className="text-slate-400" />}
+                        </button>
+                    </td>
+                )}
                 <td className="p-4 border-b border-slate-200 text-center">
                      <div className="flex items-center justify-center">
                         <img
@@ -130,6 +267,16 @@ const UsersPage: React.FC = () => {
                 <StatCell value={conversation_count} />
                 <StatCell value={ltm_count} />
                 <StatCell value={code_snippet_count} />
+                 <td className="p-4 border-b border-slate-200 text-center">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteRequest(id); }}
+                        className="text-red-500 hover:text-red-700 transition-all p-2 rounded-lg hover:bg-red-100"
+                        data-tooltip="Delete User"
+                        aria-label="Delete user"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </td>
             </tr>
         );
     };
@@ -176,6 +323,18 @@ const UsersPage: React.FC = () => {
                     <table className="w-full text-sm">
                         <thead className="bg-slate-50">
                             <tr>
+                                {isSelectionMode && (
+                                    <th className="p-4 text-center">
+                                        <input
+                                            ref={selectAllCheckboxRef}
+                                            type="checkbox"
+                                            className="h-4 w-4 rounded border-gray-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                            checked={isAllSelected}
+                                            onChange={handleSelectAll}
+                                            aria-label="Select all users"
+                                        />
+                                    </th>
+                                )}
                                 <th className="p-4 text-center font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Avatar</th>
                                 <th className="p-4 text-center font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Name</th>
                                 <th className="p-4 text-center font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Email</th>
@@ -183,6 +342,7 @@ const UsersPage: React.FC = () => {
                                 <th className="p-4 text-center font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Conversations</th>
                                 <th className="p-4 text-center font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Memories</th>
                                 <th className="p-4 text-center font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Code Snippets</th>
+                                <th className="p-4 text-center font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Delete</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -190,7 +350,7 @@ const UsersPage: React.FC = () => {
                                 processedUsers.map(userStat => <UserRow key={userStat.user.id} userStat={userStat} />)
                             ) : (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-12 text-slate-500">
+                                    <td colSpan={isSelectionMode ? 9 : 8} className="text-center py-12 text-slate-500">
                                         <p className='font-semibold text-lg mb-2'>No users found</p>
                                         <p>Your search and filter criteria did not return any results.</p>
                                     </td>
@@ -200,6 +360,26 @@ const UsersPage: React.FC = () => {
                     </table>
                 </div>
             </PanelCard>
+             {isSelectionMode && (
+                <BatchActionToolbar
+                    selectedCount={selectedUsers.size}
+                    onCancel={handleCancelSelection}
+                    onDelete={handleBatchDeleteRequest}
+                />
+            )}
+            <ConfirmationModal
+                isOpen={deleteConfirmation !== null}
+                onClose={() => setDeleteConfirmation(null)}
+                onConfirm={handleConfirmDelete}
+                title="Confirm User Deletion"
+                message={
+                    deleteConfirmation?.isBatch 
+                        ? <>Are you sure you want to permanently delete <strong>{deleteConfirmation.ids.length} users</strong>? This will remove all their associated data (profiles, conversations, memories, etc.) and cannot be undone.</>
+                        : <>Are you sure you want to permanently delete this user? This will remove all their associated data and cannot be undone.</>
+                }
+                confirmText={deleteConfirmation?.isBatch ? `Delete ${deleteConfirmation.ids.length} Users` : "Delete User"}
+                confirmButtonClass="btn-danger"
+            />
         </div>
     );
 };

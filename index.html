@@ -323,12 +323,17 @@
     .form-input:focus, .form-textarea:focus, .form-select:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-glow); }
     .form-textarea { min-height: 150px; font-family: monospace; }
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 0.5rem; padding: 0.625rem 1.25rem; font-weight: 600; transition: all 0.25s ease-in-out; border: 1px solid transparent; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-primary { background-color: var(--accent-color); color: white; }
-    .btn-primary:hover { background-color: var(--accent-color-dark); }
-    .btn-primary:disabled { background-color: #a5b4fc; cursor: not-allowed; }
-    .btn-danger { background-color: #dc2626; color: white; } .btn-danger:hover { background-color: #b91c1c; }
+    .btn-primary:hover:not(:disabled) { background-color: var(--accent-color-dark); }
+    .btn-primary:disabled { background-color: #a5b4fc; }
+    .btn-danger { background-color: #dc2626; color: white; } .btn-danger:hover:not(:disabled) { background-color: #b91c1c; }
+    .btn-danger-secondary { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
+    .btn-danger-secondary:hover:not(:disabled) { background-color: rgba(239, 68, 68, 0.1); }
+    html.dark .btn-danger-secondary { color: #f87171; border-color: #f87171; }
+    html.dark .btn-danger-secondary:hover:not(:disabled) { background-color: rgba(248, 113, 113, 0.1); }
     .btn-secondary { background-color: #fff; color: var(--text-secondary); font-weight: 500; border: 1px solid var(--border-color); }
-    .btn-secondary:hover { background-color: #f9fafb; color: var(--text-primary); }
+    .btn-secondary:hover:not(:disabled) { background-color: #f9fafb; color: var(--text-primary); }
     .modal-bg { background-color: rgba(17, 24, 39, 0.3); backdrop-filter: blur(4px); }
     .modal-content { background-color: var(--card-bg); border-radius: 0.75rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
 
@@ -593,6 +598,20 @@
         animation: fadeInUp 0.3s ease-out forwards;
     }
     
+    @keyframes pulse-danger {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5);
+      }
+      70% {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+      }
+    }
+    .animate-pulse-danger {
+      animation: pulse-danger 2s infinite;
+    }
+
     /* --- Agent Log Structured View Utilities --- */
     .structured-view-panel {
         background-color: var(--subtle-bg);

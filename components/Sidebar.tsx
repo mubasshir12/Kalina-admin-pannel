@@ -27,6 +27,11 @@ const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, className,
     const getNestedNavLinkClass = (path: string, hash: string) => 
         `sidebar-link sidebar-nested-link ${isCollapsed ? 'md:justify-center' : ''} ${currentPath === path && currentHash === hash ? 'active' : ''}`;
 
+    const getFooterNavLinkClass = ({ isActive }: { isActive: boolean }) => {
+        const baseClasses = "p-2 rounded-full text-[var(--sidebar-text-secondary)] hover:bg-[var(--sidebar-link-hover-bg)] hover:text-[var(--sidebar-text-primary)] transition-colors";
+        return isActive ? `${baseClasses} bg-[var(--sidebar-link-hover-bg)] text-[var(--sidebar-text-primary)]` : baseClasses;
+    };
+
     return (
         <div className={`flex flex-col flex-1 relative ${className || ''}`}>
             {/* Mobile-only Close Button */}
@@ -112,14 +117,16 @@ const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, className,
                     </div>
                     <div
                         className="sidebar-tooltip-wrapper w-full flex justify-center"
-                        data-tooltip="Demo Settings"
+                        data-tooltip="Settings"
                     >
-                        <button 
-                            className="p-2 rounded-full text-[var(--sidebar-text-secondary)] hover:bg-[var(--sidebar-link-hover-bg)] hover:text-[var(--sidebar-text-primary)] transition-colors"
-                            aria-label="Demo Settings"
+                        <NavLink
+                            to="/settings"
+                            className={getFooterNavLinkClass}
+                            aria-label="Settings"
+                            onClick={closeSidebar}
                         >
                             <Settings size={20} />
-                        </button>
+                        </NavLink>
                     </div>
                 </div>
             </div>

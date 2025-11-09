@@ -1,5 +1,6 @@
 
 
+
 export interface AgentLog {
   id: number;
   created_at: string;
@@ -110,6 +111,5 @@ export interface AdvancedAnalyticsData {
     voiceModeAdoption: DistributionDataPoint[];
     summarizationFailureCount: number;
     articleCacheCount: number;
-    deadEndConversationCount: number;
     totalConversations: number;
 }

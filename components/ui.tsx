@@ -383,6 +383,7 @@ export const ConfirmationModal: React.FC<{
     confirmText?: string;
     cancelText?: string;
     confirmButtonClass?: string;
+    isConfirmDisabled?: boolean;
 }> = ({ 
     isOpen, 
     onClose, 
@@ -391,7 +392,8 @@ export const ConfirmationModal: React.FC<{
     message,
     confirmText = 'Confirm',
     cancelText = 'Cancel',
-    confirmButtonClass = 'btn-primary'
+    confirmButtonClass = 'btn-primary',
+    isConfirmDisabled = false
 }) => {
     if (!isOpen) return null;
 
@@ -411,7 +413,13 @@ export const ConfirmationModal: React.FC<{
                 </div>
                 <div className="bg-slate-50 px-6 py-4 flex justify-end gap-3 rounded-b-lg">
                     <button onClick={onClose} className="btn btn-secondary">{cancelText}</button>
-                    <button onClick={onConfirm} className={`btn ${confirmButtonClass}`}>{confirmText}</button>
+                    <button 
+                        onClick={onConfirm} 
+                        className={`btn ${confirmButtonClass}`} 
+                        disabled={isConfirmDisabled}
+                    >
+                        {confirmText}
+                    </button>
                 </div>
             </div>
         </div>,

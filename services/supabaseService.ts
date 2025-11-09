@@ -1,8 +1,10 @@
 
 
+
+
 import { createClient } from '@supabase/supabase-js';
 // FIX: Import AdvancedAnalyticsData type
-import type { AgentConfig, NewsConfig, MainDashboardData, UserStats, ArticleEngagementData, AdvancedAnalyticsData, BarDataPoint } from '../types';
+import type { AgentConfig, NewsConfig, MainDashboardData, UserStats, ArticleEngagementData, AdvancedAnalyticsData, BarDataPoint, TrendDataPoint } from '../types';
 
 // Client for the Agent Handler function (separate project)
 const AGENT_SUPABASE_URL = process.env.VITE_AGENT_SUPABASE_URL || 'https://txlogzxtdltxcmkhcqsi.supabase.co';
@@ -168,9 +170,7 @@ export async function fetchUsersData(): Promise<UserStats[]> {
 
     return authUsers.users.map(user => {
         const profile = profilesMap.get(user.id);
-        // Supabase's user.user_metadata is of type 'unknown', so direct property access (like .full_name) causes an error.
-        // To handle this safely, we cast it to a known shape.
-        // FIX: Cast user.user_metadata to a known type to safely access its properties, resolving the 'does not exist on type unknown' errors.
+        // FIX: Supabase's user.user_metadata is `unknown`, so direct property access was causing a TS error. Casting it to a known type to safely access `full_name` and `avatar_url`.
         const metadata = (user.user_metadata as { full_name?: string; avatar_url?: string; }) || {};
         return {
             user: {
@@ -185,6 +185,32 @@ export async function fetchUsersData(): Promise<UserStats[]> {
             code_snippet_count: codeCounts.get(user.id) || 0,
         };
     }).sort((a, b) => new Date(b.user.created_at).getTime() - new Date(a.user.created_at).getTime());
+}
+
+
+// === User Page Data Deletion ===
+export async function deleteUser(userId: string) {
+    // Deleting a user from auth will cascade and remove their profile, etc.
+    return await dbMain.auth.admin.deleteUser(userId);
+}
+
+export async function deleteUsersBatch(userIds: string[]) {
+    if (userIds.length === 0) return { data: [], error: null };
+
+    // Supabase JS SDK v2 doesn't have a batch delete users method.
+    // We execute them in parallel using Promise.allSettled to handle individual failures.
+    const deletePromises = userIds.map(id => dbMain.auth.admin.deleteUser(id));
+    const results = await Promise.allSettled(deletePromises);
+
+    // Find the first failed promise to report a specific error.
+    const firstErrorResult = results.find(result => result.status === 'rejected');
+    if (firstErrorResult) {
+        const reason = (firstErrorResult as PromiseRejectedResult).reason;
+        console.error("Batch user deletion failed for at least one user:", reason);
+        return { data: [], error: reason };
+    }
+
+    return { data: results, error: null };
 }
 
 
@@ -242,26 +268,51 @@ export async function fetchNewsEngagementData(): Promise<ArticleEngagementData> 
         topArticles
     };
 }
-// FIX: Replace mock data fetching with real Supabase queries
+
+// FIX: Replace mock data fetching with real Supabase queries for trend charts
 export async function fetchAdvancedAnalyticsData(): Promise<AdvancedAnalyticsData> {
-    // NOTE: Trend data is mocked because querying auth.users for creation dates is complex via JS client.
-    const generateTrendData = (days: number, max: number) => {
-        const data = [];
-        for (let i = days - 1; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            data.push({
-                time: d.toISOString().split('T')[0],
-                count: Math.floor(Math.random() * max) + Math.floor(max / 4),
-            });
+    // FIX: Use UTC dates to avoid timezone-related issues in date filtering.
+    const now = new Date();
+    const thirtyDaysAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 30));
+    const thirtyDaysAgoISO = thirtyDaysAgo.toISOString();
+
+    const processTrendData = (
+        records: { created_at: string }[] | null,
+        days: number
+    ): TrendDataPoint[] => {
+        const counts = new Map<string, number>();
+        // FIX: Use UTC dates for initializing the map to match the UTC timestamps from the database.
+        const today = new Date();
+        const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+
+        for (let i = 0; i < days; i++) {
+            const d = new Date(todayUTC);
+            d.setUTCDate(d.getUTCDate() - i);
+            counts.set(d.toISOString().split('T')[0], 0);
         }
-        return data;
+
+        if (records) {
+            for (const record of records) {
+                // Supabase timestamptz is ISO 8601 format, so splitting by 'T' is a safe way to get the UTC date.
+                const recordDate = record.created_at.split('T')[0];
+                if (counts.has(recordDate)) {
+                    counts.set(recordDate, counts.get(recordDate)! + 1);
+                }
+            }
+        }
+
+        return Array.from(counts.entries())
+            .map(([time, count]) => ({ time, count }))
+            .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
     };
 
     const [
         totalConvosRes, pinnedConvosRes, voiceConvosRes, totalLtmRes, totalCodeRes,
         ltmCategoryRes, topLangsRes, discussedArticlesRes, proactiveUsersRes,
-        apiKeyUsersRes, voiceAdoptionRes, summarizationFailRes, cacheCountRes, totalProfilesRes
+        apiKeyUsersRes, voiceAdoptionRes, summarizationFailRes, cacheCountRes, totalProfilesRes,
+        // FIX: Fetch users from auth.users, not profiles, for accurate created_at timestamps.
+        userGrowthRes, 
+        conversationTrendRes,
     ] = await Promise.all([
         dbMain.from('conversations').select('*', { count: 'exact', head: true }),
         dbMain.from('conversations').select('*', { count: 'exact', head: true }).eq('is_pinned', true),
@@ -277,6 +328,10 @@ export async function fetchAdvancedAnalyticsData(): Promise<AdvancedAnalyticsDat
         dbMain.from('conversations').select('*', { count: 'exact', head: true }).eq('summarization_failed', true),
         dbMain.from('public_article_cache').select('*', { count: 'exact', head: true }),
         dbMain.from('profiles').select('*', { count: 'exact', head: true }),
+        // FIX: Use auth.admin.listUsers() to get accurate creation dates. This is the source of truth.
+        // We fetch up to 1000 users, which should be sufficient for this dashboard's scope.
+        dbMain.auth.admin.listUsers({ perPage: 1000 }),
+        dbMain.from('conversations').select('created_at').gte('created_at', thirtyDaysAgoISO),
     ]);
 
     const totalConvos = totalConvosRes.count ?? 0;
@@ -295,9 +350,10 @@ export async function fetchAdvancedAnalyticsData(): Promise<AdvancedAnalyticsDat
     }
 
     return {
-        userGrowth: generateTrendData(30, 10),
+        // FIX: Process the user list from the auth response.
+        userGrowth: processTrendData(userGrowthRes.data?.users || [], 30),
         pinnedConversationRate: totalConvos > 0 ? ((pinnedConvosRes.count ?? 0) / totalConvos) * 100 : 0,
-        conversationTrend: generateTrendData(30, 50),
+        conversationTrend: processTrendData(conversationTrendRes.data, 30),
         conversationTypes: {
             voice: voiceConvosRes.count ?? 0,
             text: totalConvos - (voiceConvosRes.count ?? 0),
@@ -312,8 +368,6 @@ export async function fetchAdvancedAnalyticsData(): Promise<AdvancedAnalyticsDat
         voiceModeAdoption: toBarData(groupAndCount(voiceAdoptionRes.data, 'voice_mode_voice')),
         summarizationFailureCount: summarizationFailRes.count ?? 0,
         articleCacheCount: cacheCountRes.count ?? 0,
-        // Dead-end conversations are complex to query, mocking for now.
-        deadEndConversationCount: Math.floor(Math.random() * 10 + 2),
         totalConversations: totalConvos,
     };
 }
