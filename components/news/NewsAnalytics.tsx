@@ -22,12 +22,10 @@ const NewsAnalytics: React.FC<{
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <PanelCard>
-                <h3 className="font-semibold mb-4">Articles Processed per Run</h3>
-                <NewsArticlesChart logs={logs} />
+                <NewsArticlesChart logs={logs} title="Articles Processed per Run" />
             </PanelCard>
             <PanelCard>
-                <h3 className="font-semibold mb-4">Run Duration</h3>
-                <AvgDurationChart durationData={analyticsData.avgDurationData} />
+                <AvgDurationChart logs={logs} title="Run Duration" />
             </PanelCard>
         </div>
     </div>

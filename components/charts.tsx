@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import type { Chart } from 'chart.js';
 // FIX: Add new data point types for advanced analytics charts
 import type { ArticleStats, TrendDataPoint, DistributionDataPoint, BarDataPoint } from '../types';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type ChartProps = {
     data: any;
@@ -202,13 +203,51 @@ export const AgentUsageChart: React.FC<{ agentCounts: { [key: string]: number } 
     return <div className="h-80"><ChartComponent type="doughnut" data={data} options={options} /></div>;
 };
 
-export const NewsArticlesChart: React.FC<{ logs: any[] }> = ({ logs }) => {
+export const NewsArticlesChart: React.FC<{ logs: any[]; title: string; }> = ({ logs, title }) => {
+    const [dateOffset, setDateOffset] = useState(0);
+
+    const sortedLogs = useMemo(() => 
+        logs.slice().sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    , [logs]);
+
+    const { paginatedLogs, startDate, endDate, isNextDisabled, isPrevDisabled } = useMemo(() => {
+        if (!sortedLogs || sortedLogs.length === 0) {
+            return { paginatedLogs: [], startDate: null, endDate: null, isNextDisabled: true, isPrevDisabled: true };
+        }
+
+        const maxLogDate = new Date(sortedLogs[sortedLogs.length - 1].created_at);
+        maxLogDate.setHours(23, 59, 59, 999);
+
+        const endDateChunk = new Date(maxLogDate);
+        endDateChunk.setDate(endDateChunk.getDate() - (dateOffset * 7));
+
+        const startDateChunk = new Date(endDateChunk);
+        startDateChunk.setDate(startDateChunk.getDate() - 6);
+        startDateChunk.setHours(0, 0, 0, 0);
+
+        const currentPaginatedLogs = sortedLogs.filter(l => {
+            const logDate = new Date(l.created_at);
+            return logDate >= startDateChunk && logDate <= endDateChunk;
+        });
+        
+        const nextIsDisabled = dateOffset === 0;
+        const prevIsDisabled = !sortedLogs.some(l => new Date(l.created_at) < startDateChunk);
+
+        return { 
+            paginatedLogs: currentPaginatedLogs, 
+            startDate: startDateChunk, 
+            endDate: endDateChunk, 
+            isNextDisabled: nextIsDisabled, 
+            isPrevDisabled: prevIsDisabled 
+        };
+    }, [sortedLogs, dateOffset]);
+
     if (!logs || logs.length === 0) {
         return <div className="h-80 flex items-center justify-center text-slate-500">No data for selected period.</div>;
     }
-    const sortedLogs = logs.slice().sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    const labels = sortedLogs.map(l => new Date(l.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
-    const articlesData = sortedLogs.map(l => {
+    
+    const labels = paginatedLogs.map(l => new Date(l.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
+    const articlesData = paginatedLogs.map(l => {
         const summaryLine = l.summary?.find((s: string) => s.includes('Total Articles Updated'));
         return parseInt(summaryLine?.split(': ')[1] || '0', 10);
     });
@@ -251,7 +290,49 @@ export const NewsArticlesChart: React.FC<{ logs: any[] }> = ({ logs }) => {
             } 
         }
     };
-    return <div className="h-80"><ChartComponent type="line" data={data} options={options} /></div>;
+
+    const formatDate = (date: Date | null) => {
+        if (!date) return '';
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    };
+
+    return (
+        <div className="flex flex-col h-full">
+            <div className="flex justify-between items-center mb-4 px-2">
+                 <h3 className="font-semibold text-slate-800">{title}</h3>
+                 <div className="flex items-center gap-2">
+                     <button 
+                        onClick={() => setDateOffset(prev => prev + 1)}
+                        disabled={isPrevDisabled}
+                        className="btn btn-secondary !p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="View previous 7 days"
+                        data-tooltip="Previous 7 Days"
+                    >
+                        <ChevronLeft size={16} />
+                    </button>
+                    <button 
+                        onClick={() => setDateOffset(prev => Math.max(0, prev - 1))}
+                        disabled={isNextDisabled}
+                        className="btn btn-secondary !p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="View next 7 days"
+                        data-tooltip="Next 7 Days"
+                    >
+                        <ChevronRight size={16} />
+                    </button>
+                </div>
+            </div>
+             <div className="flex-grow h-80">
+                {paginatedLogs.length > 0 ? (
+                    <ChartComponent type="line" data={data} options={options} />
+                ) : (
+                     <div className="h-full flex items-center justify-center text-slate-500">No articles updated in this period.</div>
+                )}
+            </div>
+             <div className="text-center text-sm text-slate-500 pt-1">
+                 {startDate && endDate ? `${formatDate(startDate)} - ${formatDate(endDate)}` : ''}
+            </div>
+        </div>
+    );
 };
 
 export const AvgLatencyChart: React.FC<{ agentLatencyData: { name: string; avg: number }[] }> = ({ agentLatencyData }) => {
@@ -323,15 +404,57 @@ export const AvgLatencyChart: React.FC<{ agentLatencyData: { name: string; avg: 
 };
 
 
-export const AvgDurationChart: React.FC<{ durationData: { time: string; duration: number }[] }> = ({ durationData }) => {
-     if (!durationData || durationData.length === 0) {
+export const AvgDurationChart: React.FC<{ logs: any[]; title: string; }> = ({ logs, title }) => {
+    const [dateOffset, setDateOffset] = useState(0);
+
+    const sortedLogs = useMemo(() =>
+        logs.slice().sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    , [logs]);
+
+    const { paginatedLogs, startDate, endDate, isNextDisabled, isPrevDisabled } = useMemo(() => {
+        if (!sortedLogs || sortedLogs.length === 0) {
+            return { paginatedLogs: [], startDate: null, endDate: null, isNextDisabled: true, isPrevDisabled: true };
+        }
+
+        const maxLogDate = new Date(sortedLogs[sortedLogs.length - 1].created_at);
+        maxLogDate.setHours(23, 59, 59, 999);
+
+        const endDateChunk = new Date(maxLogDate);
+        endDateChunk.setDate(endDateChunk.getDate() - (dateOffset * 7));
+
+        const startDateChunk = new Date(endDateChunk);
+        startDateChunk.setDate(startDateChunk.getDate() - 6);
+        startDateChunk.setHours(0, 0, 0, 0);
+
+        const currentPaginatedLogs = sortedLogs.filter(l => {
+            const logDate = new Date(l.created_at);
+            return logDate >= startDateChunk && logDate <= endDateChunk;
+        });
+        
+        const nextIsDisabled = dateOffset === 0;
+        const prevIsDisabled = !sortedLogs.some(l => new Date(l.created_at) < startDateChunk);
+
+        return { 
+            paginatedLogs: currentPaginatedLogs, 
+            startDate: startDateChunk, 
+            endDate: endDateChunk, 
+            isNextDisabled: nextIsDisabled, 
+            isPrevDisabled: prevIsDisabled 
+        };
+    }, [sortedLogs, dateOffset]);
+    
+    if (!logs || logs.length === 0) {
         return <div className="h-80 flex items-center justify-center text-slate-500">No data for selected period.</div>;
     }
+    
+    const labels = paginatedLogs.map(l => new Date(l.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
+    const durationData = paginatedLogs.map(l => parseFloat((l.duration_ms / 1000).toFixed(2)));
+
     const data = {
-        labels: durationData.map(d => d.time),
+        labels,
         datasets: [{
             label: 'Duration (s)',
-            data: durationData.map(d => d.duration),
+            data: durationData,
             backgroundColor: '#f59e0b',
             borderRadius: 4,
         }]
@@ -355,12 +478,57 @@ export const AvgDurationChart: React.FC<{ durationData: { time: string; duration
                 ticks: {
                     font: (context: any) => ({
                         size: getAdaptiveFontSize(context)
-                    })
+                    }),
+                    callback: function(value: string | number) {
+                        return `${value} s`;
+                    },
                 }
             } 
         } 
     };
-    return <div className="h-80"><ChartComponent type="bar" data={data} options={options} /></div>;
+    
+    const formatDate = (date: Date | null) => {
+        if (!date) return '';
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    };
+
+    return (
+        <div className="flex flex-col h-full">
+            <div className="flex justify-between items-center mb-4 px-2">
+                 <h3 className="font-semibold text-slate-800">{title}</h3>
+                 <div className="flex items-center gap-2">
+                     <button 
+                        onClick={() => setDateOffset(prev => prev + 1)}
+                        disabled={isPrevDisabled}
+                        className="btn btn-secondary !p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="View previous 7 days"
+                        data-tooltip="Previous 7 Days"
+                    >
+                        <ChevronLeft size={16} />
+                    </button>
+                    <button 
+                        onClick={() => setDateOffset(prev => Math.max(0, prev - 1))}
+                        disabled={isNextDisabled}
+                        className="btn btn-secondary !p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="View next 7 days"
+                        data-tooltip="Next 7 Days"
+                    >
+                        <ChevronRight size={16} />
+                    </button>
+                </div>
+            </div>
+             <div className="flex-grow h-80">
+                {paginatedLogs.length > 0 ? (
+                    <ChartComponent type="bar" data={data} options={options} />
+                ) : (
+                     <div className="h-full flex items-center justify-center text-slate-500">No runs in this period.</div>
+                )}
+            </div>
+             <div className="text-center text-sm text-slate-500 pt-1">
+                 {startDate && endDate ? `${formatDate(startDate)} - ${formatDate(endDate)}` : ''}
+            </div>
+        </div>
+    );
 };
 
 export const CategoryEngagementChart: React.FC<{ categoryData: ArticleStats[] }> = ({ categoryData }) => {

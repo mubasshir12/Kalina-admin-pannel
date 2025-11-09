@@ -25,12 +25,12 @@
         --danger: #ef4444;
         
         /* Sidebar Variables */
-        --sidebar-bg: #18181B;
-        --sidebar-border: #27272A;
-        --sidebar-text-primary: #F4F4F5;
-        --sidebar-text-secondary: #A1A1AA;
-        --sidebar-text-muted: #71717A;
-        --sidebar-link-hover-bg: #27272A;
+        --sidebar-bg: #ffffff;
+        --sidebar-border: #e5e7eb;
+        --sidebar-text-primary: #1f2937;
+        --sidebar-text-secondary: #6b7280;
+        --sidebar-text-muted: #9ca3af;
+        --sidebar-link-hover-bg: #f3f4f6;
 
         /* Pill Nav Variables */
         --pill-nav-bg: #e5e7eb;
@@ -38,6 +38,152 @@
         --pill-nav-active-bg: #ffffff;
         --pill-nav-active-text: #1f2937;
     }
+
+    html.dark {
+        /* UPDATED: New color palette based on Zinc for a darker theme */
+        --body-bg: #18181B; /* zinc-900 */
+        --card-bg: #27272A; /* zinc-800 */
+        --text-primary: #f4f4f5; /* zinc-100 */
+        --text-secondary: #a1a1aa; /* zinc-400 */
+        --border-color: #3f3f46; /* zinc-700 */
+        --accent-glow: rgba(79, 70, 229, 0.2);
+        
+        /* Pill Nav Variables */
+        --pill-nav-bg: #3f3f46; /* zinc-700 */
+        --pill-nav-text: #d4d4d8; /* zinc-300 */
+        --pill-nav-active-bg: #52525b; /* zinc-600 */
+        --pill-nav-active-text: #fafafa; /* zinc-50 */
+
+        /* Sidebar Variables */
+        --sidebar-bg: #18181B;
+        --sidebar-border: #27272A;
+        --sidebar-text-primary: #F4F4F5;
+        --sidebar-text-secondary: #A1A1AA;
+        --sidebar-text-muted: #71717A;
+        --sidebar-link-hover-bg: #27272A;
+    }
+    
+    /* --- FIX: Dark Mode Border, Background, and Accent Overrides --- */
+    
+    /* General Borders & Dividers */
+    html.dark .border-gray-200,
+    html.dark .border-slate-200,
+    html.dark .divide-slate-100,
+    html.dark .divide-slate-200 {
+        border-color: var(--border-color);
+    }
+    /* This class is likely a typo in the original JSX, but we'll handle it. */
+    html.dark .border-slate-200\/80 {
+        border-color: var(--border-color);
+    }
+    
+    /* Subtle backgrounds used in tables, panels, etc. */
+    html.dark .bg-slate-50,
+    html.dark .bg-slate-50\/50, /* Handle typo class */
+    html.dark .bg-slate-50\/80 { /* Handle typo class */
+        background-color: #27272A; /* zinc-800 */
+    }
+    html.dark .hover\:bg-slate-50:hover {
+        background-color: #3f3f46; /* zinc-700 */
+    }
+    html.dark .hover\:bg-indigo-100:hover {
+        background-color: rgba(99, 102, 241, 0.15);
+    }
+    html.dark .hover\:bg-slate-200:hover {
+        background-color: #3f3f46; /* zinc-700 */
+    }
+    html.dark .bg-red-50\/80 {
+        background-color: rgba(153, 27, 27, 0.2);
+    }
+
+    /* StatCard Accent Borders (brighter for dark background) */
+    html.dark .border-sky-500 { border-top-color: #38bdf8 !important; } /* sky-400 */
+    html.dark .border-amber-500 { border-top-color: #fbbf24 !important; } /* amber-400 */
+    html.dark .border-indigo-500 { border-top-color: #818cf8 !important; } /* indigo-400 */
+    html.dark .border-red-500 { border-top-color: #f87171 !important; } /* red-400 */
+    html.dark .border-red-600 { border-top-color: #ef4444 !important; } /* red-500 */
+    html.dark .border-blue-500 { border-top-color: #60a5fa !important; } /* blue-400 */
+    html.dark .border-purple-500 { border-top-color: #a78bfa !important; } /* purple-400 */
+    html.dark .border-green-500 { border-top-color: #4ade80 !important; } /* green-400 */
+    html.dark .border-yellow-500 { border-top-color: #facc15 !important; } /* yellow-400 */
+    html.dark .border-teal-500 { border-top-color: #2dd4bf !important; } /* teal-400 */
+    html.dark .border-violet-500 { border-top-color: #a78bfa !important; } /* violet-400 */
+    html.dark .border-fuchsia-500 { border-top-color: #e879f9 !important; } /* fuchsia-400 */
+    html.dark .border-slate-500 { border-top-color: #94a3b8 !important; } /* slate-400 */
+    html.dark .border-rose-500 { border-top-color: #f472b6 !important; } /* rose-400 */
+    html.dark .border-lime-500 { border-top-color: #a3e635 !important; } /* lime-400 */
+    html.dark .border-orange-500 { border-top-color: #fb923c !important; } /* orange-400 */
+    
+    /* --- END FIX --- */
+    
+    /* --- Specific Dark Mode Overrides --- */
+    html.dark h2, html.dark h3 { color: var(--text-primary); }
+
+    /* FIX: Add generic text color overrides for dark mode */
+    html.dark .text-slate-800,
+    html.dark .text-slate-700,
+    html.dark .text-gray-900,
+    html.dark .text-gray-800 {
+        color: var(--text-primary);
+    }
+    html.dark .text-slate-600,
+    html.dark .text-slate-500,
+    html.dark .text-gray-700,
+    html.dark .text-gray-600 {
+        color: var(--text-secondary);
+    }
+    html.dark .text-slate-400,
+    html.dark .text-gray-500,
+    html.dark .text-gray-400 {
+        color: #9ca3af; /* gray-400 */
+    }
+    html.dark .text-slate-300 {
+        color: var(--border-color);
+    }
+    html.dark header button:hover {
+        color: var(--text-primary);
+    }
+    /* END FIX */
+    
+    html.dark header { background-color: rgba(39, 39, 42, 0.8) !important; border-bottom-color: var(--border-color) !important; }
+    /* FIX: Style sidebar buttons for dark sidebar in dark mode */
+    html.dark .sidebar button.bg-gray-100 {
+        background-color: #27272A; /* zinc-800 */
+        color: #A1A1AA; /* zinc-400 */
+        border-color: #3f3f46; /* zinc-700 */
+    }
+    html.dark .sidebar button.bg-gray-100:hover {
+        background-color: #3f3f46; /* zinc-700 */
+        color: #F4F4F5; /* zinc-100 */
+    }
+    html.dark .pill-nav-item:hover { color: var(--text-primary); }
+    html.dark .log-table thead th { border-bottom-color: var(--border-color); color: var(--text-secondary); }
+    html.dark .log-table tbody tr:hover { background-color: #3f3f46; }
+    html.dark .log-table tbody td { border-bottom-color: var(--border-color); color: var(--text-primary); }
+    html.dark .log-table tbody tr.bg-indigo-50 { background-color: rgba(99, 102, 241, 0.1); }
+    html.dark .log-table tbody tr.bg-indigo-50:hover { background-color: rgba(99, 102, 241, 0.15); }
+    html.dark .status-badge.success { color: #A7F3D0; background-color: #047857; }
+    html.dark .status-badge.failure { color: #FECACA; background-color: #991B1B; }
+    html.dark .panel-card { background-color: var(--card-bg); border-color: var(--border-color); }
+    html.dark .form-input, html.dark .form-textarea, html.dark .form-select {
+        background-color: #3f3f46; border-color: #52525b; color: var(--text-primary);
+    }
+    html.dark .form-input::placeholder, html.dark .form-textarea::placeholder { color: #71717a; }
+    html.dark .form-input:focus, html.dark .form-textarea:focus, html.dark .form-select:focus {
+        border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    html.dark .btn-secondary { background-color: #3f3f46; color: var(--text-primary); border-color: #52525b; }
+    html.dark .btn-secondary:hover { background-color: #52525b; }
+    html.dark .modal-bg { background-color: rgba(24, 24, 27, 0.6); }
+    html.dark .modal-content { background-color: var(--card-bg); }
+    html.dark .custom-dropdown-trigger { background-color: #3f3f46; border-color: #52525b; }
+    html.dark .custom-dropdown-panel { background-color: var(--card-bg); border-color: var(--border-color); }
+    html.dark .custom-dropdown-option:hover, html.dark .custom-dropdown-option.active { background-color: #3f3f46; }
+    html.dark .custom-dropdown-option.active { color: var(--accent-color); }
+    /* FIX: Use hardcoded dark color for generic tooltip background in dark mode. */
+    html.dark [data-tooltip]::after { background-color: #09090b; color: #F4F4F5; }
+    html.dark [data-tooltip]::before { border-top-color: #09090b; }
+
     html { scroll-behavior: smooth; }
     body { font-family: 'Inter', sans-serif; background-color: var(--body-bg); color: var(--text-secondary); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     .gradient-text { background: linear-gradient(45deg, var(--accent-color), #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-fill-color: transparent; }
@@ -57,6 +203,22 @@
     .sidebar-section summary::-webkit-details-marker { display: none; }
     .sidebar-section .chevron-icon { transition: transform 0.2s ease; }
     .sidebar-section[open] > summary .chevron-icon { transform: rotate(180deg); }
+    
+    /* --- Collapsed Sidebar Adjustments --- */
+    /* On mobile, a "collapsed" sidebar should still look expanded. These rules apply only on desktop. */
+    @media (min-width: 768px) {
+        .sidebar.sidebar-collapsed .sidebar-link {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+            justify-content: center;
+        }
+        .sidebar.sidebar-collapsed .sidebar-section summary {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+            justify-content: center;
+        }
+    }
+
 
     /* --- Pill Navigation --- */
     .pill-nav-container {
@@ -319,7 +481,37 @@
         bottom: 100%;
     }
     
-    /* --- Custom Scrollbar --- */
+    /* --- Custom Tooltip (Sidebar Specific) --- */
+    .sidebar-tooltip-wrapper[data-tooltip]::after { /* Tooltip Content */
+        left: calc(100% + 8px);
+        top: 50%;
+        bottom: auto;
+        transform: translateY(-50%);
+    }
+    .sidebar-tooltip-wrapper[data-tooltip]::before { /* Tooltip Arrow */
+        left: calc(100% + 3px);
+        top: 50%;
+        bottom: auto;
+        transform: translateY(-50%);
+        border-color: transparent var(--sidebar-bg) transparent transparent;
+    }
+    /* FIX: Invert sidebar footer tooltip colors for better contrast */
+    .sidebar-tooltip-wrapper[data-tooltip]::after {
+        background-color: #1f2937; /* Dark background for light theme */
+        color: #f9fafb; /* Light text for light theme */
+    }
+    .sidebar-tooltip-wrapper[data-tooltip]::before {
+        border-right-color: #1f2937;
+    }
+    html.dark .sidebar-tooltip-wrapper[data-tooltip]::after {
+        background-color: #f9fafb; /* Light background for dark theme */
+        color: #1f2937; /* Dark text for dark theme */
+    }
+    html.dark .sidebar-tooltip-wrapper[data-tooltip]::before {
+        border-right-color: #f9fafb;
+    }
+
+    /* --- Custom Scrollbar (Global) --- */
     ::-webkit-scrollbar {
         width: 4px;
         height: 4px;
@@ -333,6 +525,18 @@
     }
     ::-webkit-scrollbar-thumb:hover {
         background-color: #818cf8; /* A bit darker on hover */
+    }
+
+    /* --- Sidebar Specific Scrollbar --- */
+    .sidebar nav::-webkit-scrollbar {
+        width: 1px;
+    }
+    .sidebar nav::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+    .sidebar nav::-webkit-scrollbar-thumb {
+        background-color: var(--sidebar-border);
+        border-radius: 1px;
     }
     
     /* --- Animations --- */
@@ -349,6 +553,7 @@
     .animate-fade-in-up {
         animation: fadeInUp 0.3s ease-out forwards;
     }
+    
     </style>
 <script type="importmap">
 {

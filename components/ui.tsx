@@ -92,8 +92,8 @@ const LogContentPanel: React.FC<{ title: string; children: React.ReactNode; copy
     };
 
     return (
-        <div className="panel-card overflow-hidden !p-0">
-            <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50/50">
+        <div className="panel-card overflow-hidden !p-0 flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50/50 shrink-0">
                 <div className="flex items-center gap-3">
                      <div className="w-5 flex items-center justify-center text-slate-500">{icon}</div>
                     <h4 className="font-semibold text-slate-800 text-base">{title}</h4>
@@ -107,7 +107,7 @@ const LogContentPanel: React.FC<{ title: string; children: React.ReactNode; copy
                     {copied ? <Check size={16} /> : <Copy size={16} />}
                 </button>
             </div>
-            <div className="p-4 bg-white text-sm">
+            <div className="p-4 bg-white text-sm flex-grow min-h-0">
                 {children}
             </div>
         </div>
@@ -147,14 +147,44 @@ export const LogDetailView: React.FC<LogDetailViewProps> = ({ log, onBack }) => 
     ];
 
     const metadataItems = isAgentLog ? [
-        { icon: <Rocket size={18} />, label: 'Agent', value: log.agent_name },
-        { icon: <Timer size={18} />, label: 'Latency', value: `${log.latency_ms} ms` },
+        { icon: <Rocket size={18} />, label: 'Agent', value: (log as AgentLog).agent_name },
+        { icon: <Timer size={18} />, label: 'Latency', value: `${(log as AgentLog).latency_ms} ms` },
         ...commonMetadata
     ] : [
-        { icon: <Timer size={18} />, label: 'Duration', value: `${(log.duration_ms / 1000).toFixed(2)} s` },
+        { icon: <Timer size={18} />, label: 'Duration', value: `${((log as NewsLog).duration_ms / 1000).toFixed(2)} s` },
         { icon: <Newspaper size={18} />, label: 'Articles Updated', value: articlesUpdated },
         ...commonMetadata
     ];
+
+    const contentPanels = isAgentLog ? (
+        <>
+            <LogContentPanel title="Prompt" icon={<Terminal size={18} />} copyText={(log as AgentLog).prompt}>
+                <div className="whitespace-pre-wrap font-sans leading-relaxed h-full overflow-y-auto">{(log as AgentLog).prompt}</div>
+            </LogContentPanel>
+            <LogContentPanel title="Response" icon={<Code size={18} />} copyText={JSON.stringify((log as AgentLog).response, null, 2)}>
+                <pre className="whitespace-pre-wrap bg-slate-900 text-slate-100 p-3 rounded-md text-xs h-full overflow-y-auto">{JSON.stringify((log as AgentLog).response, null, 2)}</pre>
+            </LogContentPanel>
+        </>
+    ) : (
+        <>
+            <LogContentPanel title="Summary" icon={<List size={18} />} copyText={JSON.stringify((log as NewsLog).summary, null, 2)}>
+                <pre className="whitespace-pre-wrap bg-slate-900 text-slate-100 p-3 rounded-md text-xs h-full overflow-y-auto">{JSON.stringify((log as NewsLog).summary, null, 2)}</pre>
+            </LogContentPanel>
+            <LogContentPanel title="Details" icon={<Info size={18} />} copyText={(log as NewsLog).details || ''}>
+                <pre className="whitespace-pre-wrap bg-slate-900 text-slate-100 p-3 rounded-md text-xs h-full overflow-y-auto">{(log as NewsLog).details || 'No detailed logs available.'}</pre>
+            </LogContentPanel>
+        </>
+    );
+
+    const errorMessagePanel = isAgentLog && (log as AgentLog).error_message ? (
+        <div className="panel-card border-l-4 border-red-500 bg-red-50/80 !p-4">
+            <div className="flex items-center gap-3">
+                <AlertTriangle size={18} className="text-red-600" />
+                <h4 className="font-bold text-red-800">Error Message</h4>
+            </div>
+            <p className="text-sm text-red-700 mt-2 font-mono pl-8">{(log as AgentLog).error_message}</p>
+        </div>
+    ) : null;
 
     return (
         <div className="max-w-7xl mx-auto">
@@ -167,52 +197,25 @@ export const LogDetailView: React.FC<LogDetailViewProps> = ({ log, onBack }) => 
                 <h2 className="text-2xl font-bold text-slate-800">Log Details</h2>
             </div>
 
-            {/* Two-column layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8 items-start">
+            {/* Main layout for all content */}
+            <div className="flex flex-col gap-6">
                 
-                {/* Left Sticky Column: Metadata */}
-                <div className="lg:col-span-1 lg:sticky lg:top-8 space-y-6">
-                    <PanelCard className="!p-0">
-                        <div className={`p-4 border-b-4 ${isSuccess(log.status) ? 'border-green-500' : 'border-red-500'}`}>
-                            <span className={`status-badge ${isSuccess(log.status) ? 'success' : 'failure'}`}>{log.status}</span>
-                        </div>
-                        <div className="p-4 divide-y divide-slate-100">
-                           {metadataItems.map(item => <MetadataListItem key={item.label} {...item} />)}
-                        </div>
-                    </PanelCard>
-                </div>
+                {/* Metadata Card (always on top) */}
+                <PanelCard className="!p-0">
+                    <div className={`p-4 border-b-4 ${isSuccess(log.status) ? 'border-green-500' : 'border-red-500'}`}>
+                        <span className={`status-badge ${isSuccess(log.status) ? 'success' : 'failure'}`}>{log.status}</span>
+                    </div>
+                    <div className="p-4 divide-y divide-slate-100">
+                        {metadataItems.map(item => <MetadataListItem key={item.label} {...item} />)}
+                    </div>
+                </PanelCard>
 
-                {/* Right Content Column */}
-                <div className="lg:col-span-2 space-y-6 mt-6 lg:mt-0">
-                    {isAgentLog && log.error_message && (
-                         <div className="panel-card border-l-4 border-red-500 bg-red-50/80 !p-4">
-                            <div className="flex items-center gap-3">
-                                <AlertTriangle size={18} className="text-red-600" />
-                                <h4 className="font-bold text-red-800">Error Message</h4>
-                            </div>
-                            <p className="text-sm text-red-700 mt-2 font-mono pl-8">{log.error_message}</p>
-                        </div>
-                    )}
+                {/* Error Message Panel if it exists (also on top) */}
+                {errorMessagePanel}
 
-                    {isAgentLog ? (
-                        <>
-                            <LogContentPanel title="Prompt" icon={<Terminal size={18} />} copyText={log.prompt}>
-                                <p className="whitespace-pre-wrap font-sans leading-relaxed">{log.prompt}</p>
-                            </LogContentPanel>
-                            <LogContentPanel title="Response" icon={<Code size={18} />} copyText={JSON.stringify(log.response, null, 2)}>
-                                <pre className="whitespace-pre-wrap bg-slate-900 text-slate-100 p-3 rounded-md text-xs max-h-96 overflow-y-auto">{JSON.stringify(log.response, null, 2)}</pre>
-                            </LogContentPanel>
-                        </>
-                    ) : (
-                        <>
-                           <LogContentPanel title="Summary" icon={<List size={18} />} copyText={JSON.stringify(log.summary, null, 2)}>
-                                <pre className="whitespace-pre-wrap bg-slate-900 text-slate-100 p-3 rounded-md text-xs max-h-64 overflow-y-auto">{JSON.stringify(log.summary, null, 2)}</pre>
-                           </LogContentPanel>
-                           <LogContentPanel title="Details" icon={<Info size={18} />} copyText={log.details || ''}>
-                                <pre className="whitespace-pre-wrap bg-slate-900 text-slate-100 p-3 rounded-md text-xs max-h-96 overflow-y-auto">{log.details || 'No detailed logs available.'}</pre>
-                           </LogContentPanel>
-                        </>
-                    )}
+                {/* Content Panels Grid (side-by-side on md+) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {contentPanels}
                 </div>
             </div>
         </div>

@@ -1,14 +1,19 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Settings, LineChart, History, HelpCircle, Users, TrendingUp, ChevronsLeft } from 'lucide-react';
+import { Home, Settings, LineChart, History, Users, TrendingUp, ChevronsLeft } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 
 interface SidebarProps {
     closeSidebar: () => void;
     isCollapsed: boolean;
-    onToggle: () => void;
+    className?: string;
+    isSidebarOpen?: boolean;
+    onToggleCollapse: () => void;
+    theme: string;
+    toggleTheme: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, className, isSidebarOpen, onToggleCollapse, theme, toggleTheme }) => {
     const location = useLocation();
     const currentPath = location.pathname;
     
@@ -17,27 +22,43 @@ const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, onToggle }
     const currentHash = location.hash || defaultHash; 
     
     const getNavLinkClass = (path: string) => 
-        `sidebar-link ${isCollapsed ? 'justify-center' : ''} ${currentPath === path ? 'active' : ''}`;
+        `sidebar-link ${isCollapsed ? 'md:justify-center' : ''} ${currentPath === path ? 'active' : ''}`;
 
     const getNestedNavLinkClass = (path: string, hash: string) => 
-        `sidebar-link sidebar-nested-link ${isCollapsed ? 'justify-center' : ''} ${currentPath === path && currentHash === hash ? 'active' : ''}`;
+        `sidebar-link sidebar-nested-link ${isCollapsed ? 'md:justify-center' : ''} ${currentPath === path && currentHash === hash ? 'active' : ''}`;
 
     return (
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className={`flex flex-col flex-1 relative ${className || ''}`}>
+            {/* Mobile-only Close Button */}
+            <button
+                onClick={closeSidebar}
+                aria-label="Close sidebar"
+                className={`md:hidden absolute top-4 right-[-16px] z-50 w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-all duration-300 ease-in-out shadow-md border border-gray-200 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            >
+                <ChevronsLeft size={20} />
+            </button>
+            {/* Desktop-only Collapse Button */}
+            <button
+                onClick={onToggleCollapse}
+                aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                className={`hidden md:flex absolute top-4 right-[-16px] z-50 w-8 h-8 items-center justify-center bg-gray-100 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-all duration-300 ease-in-out shadow-md border border-gray-200`}
+            >
+                <ChevronsLeft size={20} className={`transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+            </button>
             <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-                <NavLink to="/" className={() => getNavLinkClass('/')} onClick={closeSidebar} data-tooltip={isCollapsed ? 'Overview' : undefined}>
+                <NavLink to="/" className={() => getNavLinkClass('/')} onClick={closeSidebar}>
                     <Home size={18} className="shrink-0 w-5 text-center" />
-                    <span className={isCollapsed ? 'hidden' : ''}>Overview</span>
+                    <span className={isCollapsed ? 'md:hidden' : ''}>Overview</span>
                 </NavLink>
 
-                <NavLink to="/users" className={() => getNavLinkClass('/users')} onClick={closeSidebar} data-tooltip={isCollapsed ? 'Users' : undefined}>
+                <NavLink to="/users" className={() => getNavLinkClass('/users')} onClick={closeSidebar}>
                     <Users size={18} className="shrink-0 w-5 text-center" />
-                    <span className={isCollapsed ? 'hidden' : ''}>Users</span>
+                    <span className={isCollapsed ? 'md:hidden' : ''}>Users</span>
                 </NavLink>
 
-                 <NavLink to="/advanced-analytics" className={() => getNavLinkClass('/advanced-analytics')} onClick={closeSidebar} data-tooltip={isCollapsed ? 'Insights' : undefined}>
+                 <NavLink to="/advanced-analytics" className={() => getNavLinkClass('/advanced-analytics')} onClick={closeSidebar}>
                     <TrendingUp size={18} className="shrink-0 w-5 text-center" />
-                    <span className={isCollapsed ? 'hidden' : ''}>Insights</span>
+                    <span className={isCollapsed ? 'md:hidden' : ''}>Insights</span>
                 </NavLink>
                 
                 <div className="pt-4">
@@ -47,14 +68,14 @@ const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, onToggle }
                         </div>
                     )}
                     <div className="space-y-1">
-                        <NavLink to="/agent#analytics" className={() => getNestedNavLinkClass('/agent', '#analytics')} onClick={closeSidebar} data-tooltip={isCollapsed ? 'Analytics' : undefined}>
-                            <LineChart size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'hidden' : ''}>Analytics</span>
+                        <NavLink to="/agent#analytics" className={() => getNestedNavLinkClass('/agent', '#analytics')} onClick={closeSidebar}>
+                            <LineChart size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'md:hidden' : ''}>Analytics</span>
                         </NavLink>
-                        <NavLink to="/agent#logs" className={() => getNestedNavLinkClass('/agent', '#logs')} onClick={closeSidebar} data-tooltip={isCollapsed ? 'Logs' : undefined}>
-                            <History size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'hidden' : ''}>Logs</span>
+                        <NavLink to="/agent#logs" className={() => getNestedNavLinkClass('/agent', '#logs')} onClick={closeSidebar}>
+                            <History size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'md:hidden' : ''}>Logs</span>
                         </NavLink>
-                         <NavLink to="/agent#settings" className={() => getNestedNavLinkClass('/agent', '#settings')} onClick={closeSidebar} data-tooltip={isCollapsed ? 'Settings' : undefined}>
-                            <Settings size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'hidden' : ''}>Settings</span>
+                         <NavLink to="/agent#settings" className={() => getNestedNavLinkClass('/agent', '#settings')} onClick={closeSidebar}>
+                            <Settings size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'md:hidden' : ''}>Settings</span>
                         </NavLink>
                     </div>
                 </div>
@@ -66,33 +87,41 @@ const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, onToggle }
                         </div>
                     )}
                     <div className="space-y-1">
-                         <NavLink to="/news#engagement" className={() => getNestedNavLinkClass('/news', '#engagement')} onClick={closeSidebar} data-tooltip={isCollapsed ? 'Engagement' : undefined}>
-                            <TrendingUp size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'hidden' : ''}>Engagement</span>
+                         <NavLink to="/news#engagement" className={() => getNestedNavLinkClass('/news', '#engagement')} onClick={closeSidebar}>
+                            <TrendingUp size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'md:hidden' : ''}>Engagement</span>
                         </NavLink>
-                        <NavLink to="/news#analytics" className={() => getNestedNavLinkClass('/news', '#analytics')} onClick={closeSidebar} data-tooltip={isCollapsed ? 'Analytics' : undefined}>
-                            <LineChart size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'hidden' : ''}>Analytics</span>
+                        <NavLink to="/news#analytics" className={() => getNestedNavLinkClass('/news', '#analytics')} onClick={closeSidebar}>
+                            <LineChart size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'md:hidden' : ''}>Analytics</span>
                         </NavLink>
-                        <NavLink to="/news#logs" className={() => getNestedNavLinkClass('/news', '#logs')} onClick={closeSidebar} data-tooltip={isCollapsed ? 'Logs' : undefined}>
-                            <History size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'hidden' : ''}>Logs</span>
+                        <NavLink to="/news#logs" className={() => getNestedNavLinkClass('/news', '#logs')} onClick={closeSidebar}>
+                            <History size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'md:hidden' : ''}>Logs</span>
                         </NavLink>
-                        <NavLink to="/news#settings" className={() => getNestedNavLinkClass('/news', '#settings')} onClick={closeSidebar} data-tooltip={isCollapsed ? 'Settings' : undefined}>
-                            <Settings size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'hidden' : ''}>Settings</span>
+                        <NavLink to="/news#settings" className={() => getNestedNavLinkClass('/news', '#settings')} onClick={closeSidebar}>
+                            <Settings size={18} className="shrink-0 w-5" /> <span className={isCollapsed ? 'md:hidden' : ''}>Settings</span>
                         </NavLink>
                     </div>
                 </div>
             </nav>
-            <div className="p-4 border-t border-[var(--sidebar-border)]">
-                <a href="#" className={`sidebar-link ${isCollapsed ? 'justify-center' : ''}`} data-tooltip={isCollapsed ? 'Help & Support' : undefined}>
-                    <HelpCircle size={18} className="shrink-0 w-5 text-center" />
-                    <span className={isCollapsed ? 'hidden' : ''}>Help & Support</span>
-                </a>
-                 <button 
-                    onClick={onToggle}
-                    aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                    className="hidden md:flex items-center justify-center w-full h-10 mt-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/50 rounded-md transition-colors"
-                >
-                    <ChevronsLeft size={20} className={`transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
-                </button>
+            <div className={`p-4 border-t border-[var(--sidebar-border)]`}>
+                <div className={`grid grid-cols-2 gap-2 items-center justify-items-center ${isCollapsed ? 'md:grid-cols-1' : ''}`}>
+                    <div
+                        className="sidebar-tooltip-wrapper w-full flex justify-center"
+                        data-tooltip={theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+                    >
+                        <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+                    </div>
+                    <div
+                        className="sidebar-tooltip-wrapper w-full flex justify-center"
+                        data-tooltip="Demo Settings"
+                    >
+                        <button 
+                            className="p-2 rounded-full text-[var(--sidebar-text-secondary)] hover:bg-[var(--sidebar-link-hover-bg)] hover:text-[var(--sidebar-text-primary)] transition-colors"
+                            aria-label="Demo Settings"
+                        >
+                            <Settings size={20} />
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

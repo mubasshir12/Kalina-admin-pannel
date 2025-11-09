@@ -20,24 +20,24 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-// FIX: Removed `public` keyword for idiomatic React class component style.
+    // FIX: Removed `public` keyword for idiomatic React/TypeScript style.
     state: ErrorBoundaryState = {
         hasError: false
     };
 
-// FIX: Removed `public` keyword.
+    // FIX: Removed `public` keyword.
     static getDerivedStateFromError(_: Error): ErrorBoundaryState {
         // Update state so the next render will show the fallback UI.
         return { hasError: true };
     }
 
-// FIX: Removed `public` keyword.
+    // FIX: Removed `public` keyword.
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         // Log the error to the console, as requested.
         console.error("Kalina AI - Uncaught Application Error:", error, errorInfo);
     }
 
-// FIX: Removed `public` keyword.
+    // FIX: Removed `public` keyword to ensure `this` context is correctly bound.
     render() {
         if (this.state.hasError) {
             // Render a fallback UI when an error is caught
@@ -65,10 +65,10 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 
-const PageLayout: React.FC = () => {
+const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ theme, toggleTheme }) => {
     const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
     const [pageTitle, setPageTitle] = useState('Overview');
 
     useEffect(() => {
@@ -93,7 +93,7 @@ const PageLayout: React.FC = () => {
     }, [location.pathname]);
 
     return (
-        <div className="flex h-full bg-gray-100 overflow-hidden">
+        <div className="flex h-full overflow-hidden">
             {/* Mobile Overlay */}
             <div 
                 className={`fixed inset-0 bg-gray-900/50 z-30 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}
@@ -101,20 +101,21 @@ const PageLayout: React.FC = () => {
             ></div>
             
             {/* Sidebar */}
-            <aside className={`sidebar w-64 flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-40 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'}`}>
+            <aside className={`sidebar w-fit flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-40 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isSidebarCollapsed ? 'md:w-20 sidebar-collapsed' : 'md:w-64'}`}>
                 <div className="flex items-center justify-between p-4 h-16 flex-shrink-0">
                     <h1 className={`sidebar-header-title flex items-center gap-2 ${isSidebarCollapsed ? 'md:justify-center md:w-full' : ''}`}>
                         <Zap size={20} className="text-indigo-400 shrink-0" />
                         <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Kalina AI</span>
                     </h1>
-                    <button className="md:hidden text-gray-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
-                        <X size={24} />
-                    </button>
                 </div>
                 <Sidebar 
+                    className="flex-1 min-h-0"
                     closeSidebar={() => setIsSidebarOpen(false)} 
                     isCollapsed={isSidebarCollapsed}
-                    onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                    isSidebarOpen={isSidebarOpen}
+                    onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
                 />
             </aside>
 
@@ -143,10 +144,37 @@ const PageLayout: React.FC = () => {
 
 
 const App: React.FC = () => {
+    const [theme, setTheme] = useState(() => {
+        const savedTheme = localStorage.getItem('kalina-theme');
+        if (savedTheme) return savedTheme;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    });
+
+    const toggleTheme = () => {
+        setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    };
+
+    useEffect(() => {
+        const root = document.documentElement;
+        if (theme === 'dark') {
+            root.classList.add('dark');
+        } else {
+            root.classList.remove('dark');
+        }
+        localStorage.setItem('kalina-theme', theme);
+
+        // Update Chart.js global defaults for theme
+        if ((window as any).Chart) {
+            const isDark = theme === 'dark';
+            (window as any).Chart.defaults.color = isDark ? '#9ca3af' : '#6b7280';
+            (window as any).Chart.defaults.borderColor = isDark ? 'rgba(55, 65, 81, 0.8)' : '#e5e7eb';
+        }
+    }, [theme]);
+    
     return (
         <HashRouter>
             <ErrorBoundary>
-                <PageLayout />
+                <PageLayout theme={theme} toggleTheme={toggleTheme} />
             </ErrorBoundary>
         </HashRouter>
     );

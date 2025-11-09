@@ -175,13 +175,7 @@ const NewsAdminPage: React.FC = () => {
             return acc + (parseInt(summaryLine?.split(': ')[1] || '0', 10));
         }, 0);
         
-        const sortedLogs = relevantLogs.slice().sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        const avgDurationData = sortedLogs.map(l => ({
-            time: new Date(l.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-            duration: parseFloat((l.duration_ms / 1000).toFixed(2))
-        }));
-
-        return { totalRuns, successRate, avgDuration, articlesUpdated, avgDurationData };
+        return { totalRuns, successRate, avgDuration, articlesUpdated };
     }, [filteredLogsByDate]);
 
     if (loading) {
