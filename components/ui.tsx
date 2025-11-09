@@ -261,7 +261,7 @@ export const CustomDropdown: React.FC<{
                 aria-expanded={isOpen}
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <span className="capitalize truncate">{displayValue}</span>
+                <span className="capitalize truncate min-w-0">{displayValue}</span>
                 <ChevronDown size={16} className="text-slate-500 chevron" />
             </button>
             <div
@@ -275,7 +275,7 @@ export const CustomDropdown: React.FC<{
                             type="button"
                             role="option"
                             aria-selected={value === option}
-                            className={`custom-dropdown-option capitalize truncate ${value === option ? 'active' : ''}`}
+                            className={`custom-dropdown-option capitalize ${value === option ? 'active' : ''}`}
                             onClick={() => handleSelect(option)}
                         >
                             {displayLabels?.[option] || option}
@@ -295,7 +295,7 @@ const CustomDateInput: React.FC<{
     const inputRef = useRef<HTMLInputElement>(null);
 
     return (
-        <div>
+        <div className="w-full">
             <label className="text-xs font-medium text-slate-500 block mb-1.5">{label}</label>
             <div className="relative">
                 <input
@@ -411,7 +411,7 @@ export const DateRangeFilter: React.FC<{
     const PresetButton: React.FC<{ label: string; filter: 'all' | '7d' }> = ({ label, filter }) => (
         <button
             onClick={() => handlePresetChange(filter)}
-            className={`btn text-sm px-4 py-2 ${
+            className={`btn text-sm px-2 sm:px-4 py-2 whitespace-nowrap ${
                 activeFilter === filter
                     ? 'btn-primary'
                     : 'btn-secondary'
@@ -430,57 +430,72 @@ export const DateRangeFilter: React.FC<{
         return 'Custom Range';
     };
 
+    const PopoverInnerContent = (
+        <div className="panel-card !p-4 shadow-xl border border-slate-200/80">
+            <h4 className="font-semibold text-sm mb-3 text-slate-800">Select Custom Date Range</h4>
+            <div className="flex flex-col sm:flex-row gap-3 items-end">
+                <CustomDateInput 
+                    label="Start Date"
+                    value={customStartDate}
+                    onChange={setCustomStartDate}
+                />
+                <CustomDateInput 
+                    label="End Date"
+                    value={customEndDate}
+                    onChange={setCustomEndDate}
+                />
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+                <button onClick={() => setIsPopoverOpen(false)} className="btn btn-secondary text-sm px-3 py-1.5">Cancel</button>
+                <button onClick={handleCustomApply} className="btn btn-primary text-sm px-3 py-1.5">Apply</button>
+            </div>
+        </div>
+    );
+
     const popoverContent = isPopoverOpen ? ReactDOM.createPortal(
-        <div
-            ref={popoverRef}
-            style={{ 
-                top: `${popoverPosition.top}px`, 
-                left: `${popoverPosition.left}px`,
-                position: 'absolute',
-                width: '340px',
-            }}
-            className="z-50"
-        >
-            <div className="panel-card !p-4 shadow-xl border border-slate-200/80">
-                <h4 className="font-semibold text-sm mb-3 text-slate-800">Select Custom Date Range</h4>
-                <div className="grid grid-cols-2 gap-3 items-end">
-                    <CustomDateInput 
-                        label="Start Date"
-                        value={customStartDate}
-                        onChange={setCustomStartDate}
-                    />
-                    <CustomDateInput 
-                        label="End Date"
-                        value={customEndDate}
-                        onChange={setCustomEndDate}
-                    />
-                </div>
-                <div className="flex justify-end gap-2 mt-4">
-                    <button onClick={() => setIsPopoverOpen(false)} className="btn btn-secondary text-sm px-3 py-1.5">Cancel</button>
-                    <button onClick={handleCustomApply} className="btn btn-primary text-sm px-3 py-1.5">Apply</button>
+        <>
+            {/* Mobile: Modal with backdrop */}
+            <div 
+                className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm md:hidden"
+                onClick={() => setIsPopoverOpen(false)}
+                aria-hidden="true"
+            ></div>
+            <div
+                ref={popoverRef}
+                style={{
+                    '--popover-top': `${popoverPosition.top}px`,
+                    '--popover-left': `${popoverPosition.left}px`,
+                }}
+                className="fixed z-50 p-4 inset-0 flex items-center justify-center md:p-0 md:inset-auto md:block md:absolute md:top-[var(--popover-top)] md:left-[var(--popover-left)]"
+            >
+                <div className="w-full max-w-sm md:w-[340px]">
+                    {PopoverInnerContent}
                 </div>
             </div>
-        </div>,
+        </>,
         document.body
     ) : null;
 
+
     return (
-        <div className="flex flex-wrap items-center gap-2 justify-end">
-            <PresetButton label="All Time" filter="all" />
-            <PresetButton label="Last 7 Days" filter="7d" />
-            
-            <button
-                ref={customButtonRef}
-                onClick={togglePopover}
-                className={`btn text-sm px-4 py-2 flex items-center gap-2 ${
-                    activeFilter === 'custom'
-                        ? 'btn-primary'
-                        : 'btn-secondary'
-                }`}
-            >
-                <CalendarRange size={16} />
-                <span>{getCustomDisplayLabel()}</span>
-            </button>
+        <div className="pill-nav-container">
+            <div className="inline-flex items-stretch gap-2">
+                <PresetButton label="All Time" filter="all" />
+                <PresetButton label="Last 7 Days" filter="7d" />
+                
+                <button
+                    ref={customButtonRef}
+                    onClick={togglePopover}
+                    className={`btn text-sm px-2 sm:px-4 py-2 flex items-center gap-2 whitespace-nowrap ${
+                        activeFilter === 'custom'
+                            ? 'btn-primary'
+                            : 'btn-secondary'
+                    }`}
+                >
+                    <CalendarRange size={16} className="flex-shrink-0" />
+                    <span className="truncate">{getCustomDisplayLabel()}</span>
+                </button>
+            </div>
             {popoverContent}
         </div>
     );

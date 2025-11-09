@@ -151,7 +151,7 @@ const UsersPage: React.FC = () => {
                                 className="form-input w-full pl-11 rounded-full"
                             />
                         </div>
-                        <div className="shrink-0 w-48">
+                        <div className="shrink-0 w-40">
                             <CustomDropdown
                                 value={sortOption}
                                 onChange={setSortOption}
