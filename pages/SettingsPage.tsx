@@ -155,10 +155,10 @@ const SettingsPage: React.FC = () => {
         const buttonIcon = actionType === 'sequence' ? <RefreshCw size={16} /> : <Trash2 size={16} />;
 
         return (
-            <div className="bg-zinc-800/50 dark:bg-zinc-900/70 border border-zinc-700/50 dark:border-zinc-700 p-4 rounded-lg flex flex-col justify-between items-start gap-4">
+            <div className="bg-[var(--subtle-bg)] border border-[var(--subtle-border)] p-4 rounded-lg flex flex-col justify-between items-start gap-4">
                 <div>
-                    <h4 className="font-semibold text-slate-800 dark:text-zinc-200">{title}</h4>
-                    <p className="text-sm text-slate-600 dark:text-zinc-400 mt-1 max-w-md">{description}</p>
+                    <h4 className="font-semibold text-[var(--text-primary)]">{title}</h4>
+                    <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-md">{description}</p>
                 </div>
                 <div className="flex items-center justify-end gap-3 w-full shrink-0">
                     {isArmed ? (
@@ -214,8 +214,8 @@ const SettingsPage: React.FC = () => {
                                             }}
                                             className={`w-full text-left flex items-center gap-2.5 p-2 rounded-md text-sm font-medium transition-colors ${
                                                 selectedTable === table.name
-                                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
-                                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200'
+                                                    ? 'bg-[var(--accent-glow)] text-[var(--accent-text)]'
+                                                    : 'text-[var(--sidebar-text-secondary)] hover:bg-[var(--sidebar-link-hover-bg)] hover:text-[var(--sidebar-text-primary)]'
                                             }`}
                                         >
                                             <Table size={14} className="shrink-0" />
@@ -232,17 +232,17 @@ const SettingsPage: React.FC = () => {
                 <main className="flex-1">
                     {selectedTableInfo ? (
                         <PanelCard>
-                            <div className="border-b border-slate-200 pb-4 mb-6">
+                            <div className="border-b border-[var(--border-color)] pb-4 mb-6">
                                 <h2 className="text-2xl font-bold text-slate-800 font-mono">{selectedTableInfo.name}</h2>
                                 <p className="text-sm text-slate-500 mt-1">{selectedTableInfo.description}</p>
                             </div>
                             
-                            <div className="bg-zinc-900/5 rounded-lg p-6 dark:bg-zinc-900/30 border border-zinc-500/10 dark:border-zinc-700/50">
+                            <div className="bg-red-100 dark:bg-red-950/60 rounded-lg p-6 border border-red-300 dark:border-red-700">
                                 <div className="flex items-center gap-3">
-                                    <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-500" />
-                                    <h3 className="text-xl font-bold text-red-800 dark:text-red-300">Danger Zone</h3>
+                                    <AlertTriangle className="w-6 h-6 text-red-700 dark:text-red-400" />
+                                    <h3 className="text-xl font-bold text-red-900 dark:text-red-200">Danger Zone</h3>
                                 </div>
-                                <p className="text-sm text-red-700 mt-2 mb-6 ml-9 dark:text-red-400">
+                                <p className="text-sm text-red-800 mt-2 mb-6 ml-9 dark:text-red-300">
                                     These actions are irreversible and can lead to data loss. Be absolutely certain before proceeding.
                                 </p>
                                 
@@ -278,9 +278,9 @@ const SettingsPage: React.FC = () => {
                 title="Confirm ID Reset"
                 message={
                     <div className="space-y-3">
-                        <div className="flex items-start gap-3 p-3 bg-yellow-50 border border-yellow-300 rounded-md dark:bg-yellow-900/30 dark:border-yellow-700">
+                        <div className="flex items-start gap-3 p-3 bg-[var(--status-warning-bg)] border border-yellow-500/20 rounded-md">
                             <AlertTriangle className="w-8 h-8 text-yellow-500 shrink-0" />
-                            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                            <p className="text-sm text-[var(--status-warning-text)]">
                                 This is a potentially destructive action. Are you sure you want to reset the IDs for the <strong>{modal.tableName}</strong> table?
                             </p>
                         </div>
@@ -300,7 +300,7 @@ const SettingsPage: React.FC = () => {
                 title="EXTREME DANGER: Confirm Data Deletion"
                 message={
                     <div className="space-y-4">
-                        <div className="flex items-start gap-3 p-3 bg-red-100 border border-red-300 rounded-md dark:bg-red-900/30 dark:border-red-700">
+                        <div className="flex items-start gap-3 p-3 bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-800 rounded-md">
                             <AlertTriangle className="w-12 h-12 text-red-500 shrink-0" />
                             <p className="text-sm text-red-800 dark:text-red-200">
                                 This action will permanently delete <strong>ALL</strong> data from the <strong className="font-mono">{modal.tableName}</strong> table. This cannot be undone.
