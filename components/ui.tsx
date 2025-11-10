@@ -83,7 +83,7 @@ export const LogContentPanel: React.FC<{ title: string; children: React.ReactNod
                 </div>
                 <button 
                     onClick={handleCopy} 
-                    data-tooltip="Copy to clipboard"
+                    data-tooltip="Copy"
                     className={`text-slate-500 hover:text-indigo-600 disabled:text-slate-300 disabled:cursor-not-allowed transition-colors w-9 h-9 rounded-lg flex items-center justify-center hover:bg-slate-200 ${copied ? 'text-green-500' : ''}`}
                     disabled={!copyText}
                 >
@@ -447,3 +447,27 @@ export const BatchActionToolbar: React.FC<{
         </button>
     </div>
 );
+
+export const CopyButton: React.FC<{ textToCopy: string; className?: string; }> = ({ textToCopy, className = '' }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!textToCopy) return;
+        navigator.clipboard.writeText(textToCopy);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <button
+            onClick={handleCopy}
+            data-tooltip="Copy"
+            className={`absolute top-2 right-2 z-10 text-slate-500 hover:text-indigo-600 disabled:text-slate-300 disabled:cursor-not-allowed transition-all w-8 h-8 rounded-lg flex items-center justify-center bg-slate-50/50 hover:bg-slate-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-700 opacity-0 group-hover:opacity-100 focus:opacity-100 ${copied ? '!opacity-100 text-green-500' : ''} ${className}`}
+            disabled={!textToCopy}
+            aria-label="Copy code to clipboard"
+        >
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+        </button>
+    );
+};

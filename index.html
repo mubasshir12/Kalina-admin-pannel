@@ -47,6 +47,9 @@
         --status-info-text: #075985;
         --status-neutral-bg: #f1f5f9;
         --status-neutral-text: #475569;
+        --status-danger-bg: #fee2e2;
+        --status-danger-text: #b91c1c;
+        --status-danger-subtle-bg: rgba(239, 68, 68, 0.1);
         
         /* Agent Structured Views */
         --subtle-bg: #f9fafb;
@@ -90,6 +93,9 @@
         --status-info-text: #7dd3fc;
         --status-neutral-bg: #52525b;
         --status-neutral-text: #d4d4d8;
+        --status-danger-bg: #991B1B;
+        --status-danger-text: #fecaca;
+        --status-danger-subtle-bg: rgba(248, 113, 113, 0.1);
 
         /* Agent Structured Views */
         --subtle-bg: #3f3f46;
@@ -582,6 +588,15 @@
         background-color: var(--sidebar-border);
         border-radius: 1px;
     }
+
+    /* --- Utility: Hide Scrollbar --- */
+    .hide-scrollbar {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
     
     /* --- Animations --- */
     @keyframes fadeInUp {
@@ -637,16 +652,26 @@
         background-color: var(--subtle-bg);
     }
     
-    /* --- Settings Page Connecting Line --- */
+    /* --- Settings & Architecture Page Connecting Line --- */
     .connecting-line {
         stroke-dasharray: 6 3;
-        animation: march 0.5s linear infinite;
+        animation: march 1s linear infinite;
         opacity: 0.8;
     }
     @keyframes march {
         to {
             stroke-dashoffset: -9;
         }
+    }
+
+    /* --- System Architecture Page Styles --- */
+    .port {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: transparent;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
     }
 
     </style>

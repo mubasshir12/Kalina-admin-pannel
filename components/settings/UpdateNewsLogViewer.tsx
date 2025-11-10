@@ -1,18 +1,19 @@
+import React, { useState } from 'react';
+import { PanelCard, CopyButton } from '../ui';
+import { ArrowLeft, List, Info } from 'lucide-react';
 
-import React from 'react';
-import type { NewsLog } from '../../types';
-import {
-    List,
-    Info,
-    ArrowLeft,
-    CalendarDays,
-    Clock,
-    Hash,
-    Timer,
-    Newspaper,
-} from 'lucide-react';
-import { PanelCard, LogContentPanel, timeAgo } from '../ui';
-
+// --- Type Guard ---
+export const isUpdateNewsLog = (row: any): boolean => {
+    return (
+        row &&
+        typeof row === 'object' &&
+        'duration_ms' in row &&
+        'summary' in row &&
+        Array.isArray(row.summary) &&
+        'details' in row &&
+        typeof row.details === 'string'
+    );
+};
 
 // --- Helper to convert GMT to local IST time string without label ---
 const convertGmtToIstTime = (gmtDateString: string): string => {
@@ -120,7 +121,7 @@ const StructuredSummary: React.FC<{ summary: string[] }> = ({ summary }) => {
 };
 
 
-// --- StructuredDetails Component (New implementation) ---
+// --- StructuredDetails Component ---
 const StructuredDetails: React.FC<{ details: string }> = ({ details }) => {
     if (!details) {
         return <p style={{ color: 'var(--text-secondary)' }}>No detailed logs available.</p>;
@@ -186,71 +187,84 @@ const StructuredDetails: React.FC<{ details: string }> = ({ details }) => {
     );
 };
 
+// --- Reusable Toggle Card Component ---
+const ViewToggle: React.FC<{ isStructured: boolean; onToggle: () => void }> = ({ isStructured, onToggle }) => (
+    <div className="flex items-center gap-2">
+        <span className="text-sm font-medium" style={{ color: !isStructured ? 'var(--accent-text)' : 'var(--text-secondary)' }}>Raw</span>
+        <button
+            onClick={onToggle}
+            role="switch"
+            aria-checked={isStructured}
+            style={{ backgroundColor: isStructured ? 'var(--accent-color)' : 'var(--pill-nav-bg)' }}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+        >
+            <span
+                aria-hidden="true"
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isStructured ? 'translate-x-5' : 'translate-x-0'}`}
+            />
+        </button>
+        <span className="text-sm font-medium" style={{ color: isStructured ? 'var(--accent-text)' : 'var(--text-secondary)' }}>Structured</span>
+    </div>
+);
 
-// --- Main NewsLogDetail Component ---
-const NewsLogDetail: React.FC<{ log: NewsLog; onBack: () => void; }> = ({ log, onBack }) => {
-    const isSuccess = log.status.toLowerCase().includes('success');
-    const articlesUpdated = log.summary?.find(s => s.includes('Total Articles Updated'))?.split(': ')[1] || 'N/A';
-    const logDate = new Date(log.created_at);
-    const dateString = logDate.toLocaleDateString(undefined, {
-        year: 'numeric', month: 'long', day: 'numeric'
-    });
-    const fullTimestamp = logDate.toLocaleString();
-
-    const metadataItems = [
-        { icon: <Timer size={18} />, label: 'Duration', value: `${(log.duration_ms / 1000).toFixed(2)} s` },
-        { icon: <Newspaper size={18} />, label: 'Articles Updated', value: articlesUpdated },
-        { icon: <CalendarDays size={18} />, label: 'Date', value: dateString },
-        { icon: <Clock size={18} />, label: 'Time', value: <span data-tooltip={fullTimestamp}>{timeAgo(logDate)}</span> },
-        { icon: <Hash size={18} />, label: 'Log ID', value: log.id }
-    ];
+const JsonToggleCard: React.FC<{
+    title: string;
+    data: any;
+    structuredRenderer: (data: any) => React.ReactNode;
+}> = ({ title, data, structuredRenderer }) => {
+    const [isStructured, setIsStructured] = useState(true);
+    const rawJsonString = JSON.stringify(data, null, 2);
 
     return (
-         <div className="max-w-7xl mx-auto">
-            <div className="mb-6 flex items-center gap-4">
+        <PanelCard>
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">{title}</h3>
+                <ViewToggle isStructured={isStructured} onToggle={() => setIsStructured(!isStructured)} />
+            </div>
+
+            <div className="relative group border-t border-[var(--border-color)] pt-4 mt-2">
+                 {!isStructured && <CopyButton textToCopy={rawJsonString} />}
+                <div className="max-h-[70vh] overflow-y-auto hide-scrollbar">
+                    {isStructured ? (
+                        structuredRenderer(data)
+                    ) : (
+                        <pre className="text-xs bg-[var(--subtle-bg)] p-3 rounded-md overflow-auto">
+                            <code>{rawJsonString}</code>
+                        </pre>
+                    )}
+                </div>
+            </div>
+        </PanelCard>
+    );
+};
+
+
+// --- Main Viewer Component ---
+const UpdateNewsLogViewer: React.FC<{ row: any; onBack: () => void }> = ({ row, onBack }) => {
+    return (
+        <div className="animate-fade-in-up space-y-6">
+            <div className="flex items-center gap-4">
                 <button onClick={onBack} className="btn btn-secondary">
                     <ArrowLeft size={16} />
-                    <span>Back to Logs</span>
+                    <span>Back</span>
                 </button>
-                <h2 className="text-2xl font-bold text-slate-800">News Log Details</h2>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">Log Details for <span className="font-mono">update_news_logs</span></h3>
             </div>
-            <div className="flex flex-col gap-6">
-                <PanelCard className="!p-0">
-                     <div className={`p-4 border-b-4 ${isSuccess ? 'border-green-500' : 'border-red-500'}`}>
-                        <span className={`status-badge ${isSuccess ? 'success' : 'failure'}`}>{log.status}</span>
-                    </div>
-                    <div className="p-6">
-                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-6 gap-y-4">
-                            {metadataItems.map((item, index) => (
-                                <React.Fragment key={item.label}>
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <div className="flex-shrink-0 text-slate-500 bg-slate-100 p-2 rounded-full dark:bg-zinc-700 dark:text-zinc-300">
-                                            {React.cloneElement(item.icon, { size: 16 })}
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold dark:text-zinc-400">{item.label}</p>
-                                            <div className="font-bold text-[var(--text-primary)] text-base">{item.value}</div>
-                                        </div>
-                                    </div>
-                                    {index < metadataItems.length - 1 && (
-                                        <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-zinc-700 self-center"></div>
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </div>
-                    </div>
-                </PanelCard>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <LogContentPanel title="Summary" icon={<List size={18} />} copyText={JSON.stringify(log.summary, null, 2)} className="h-[855px]">
-                        <StructuredSummary summary={log.summary} />
-                    </LogContentPanel>
-                    <LogContentPanel title="Details" icon={<Info size={18} />} copyText={log.details || ''} className="h-[855px]">
-                        <StructuredDetails details={log.details} />
-                    </LogContentPanel>
-                </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                 <JsonToggleCard
+                    title="Summary"
+                    data={row.summary}
+                    structuredRenderer={(data) => <StructuredSummary summary={data} />}
+                />
+                <JsonToggleCard
+                    title="Details"
+                    data={row.details}
+                    structuredRenderer={(data) => <StructuredDetails details={data} />}
+                />
             </div>
         </div>
     );
 };
 
-export default NewsLogDetail;
+export default UpdateNewsLogViewer;

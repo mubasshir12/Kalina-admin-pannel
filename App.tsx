@@ -8,6 +8,7 @@ import NewsAdminPage from './pages/NewsAdminPage';
 import UsersPage from './pages/UsersPage';
 import AdvancedAnalyticsPage from './pages/AdvancedAnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
+import SystemArchitecturePage from './pages/SystemArchitecturePage'; // New Page Import
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
@@ -86,6 +87,9 @@ const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ them
             case '/settings':
                 setPageTitle('Settings');
                 break;
+            case '/architecture': // New Page Title
+                setPageTitle('System Architecture');
+                break;
             case '/':
             default:
                 setPageTitle('Overview');
@@ -102,7 +106,7 @@ const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ them
             ></div>
             
             {/* Sidebar */}
-            <aside className={`sidebar w-fit flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-40 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isSidebarCollapsed ? 'md:w-20 sidebar-collapsed' : 'md:w-64'}`}>
+            <aside className={`sidebar w-fit flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-40 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isSidebarCollapsed ? 'md:w-20 sidebar-collapsed' : 'md:w-44'}`}>
                 <div className="flex items-center justify-between p-4 h-16 flex-shrink-0">
                     <h1 className={`sidebar-header-title flex items-center gap-2 ${isSidebarCollapsed ? 'md:justify-center md:w-full' : ''}`}>
                         <Zap size={20} className="text-indigo-400 shrink-0" />
@@ -137,6 +141,7 @@ const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ them
                         <Route path="/users" element={<UsersPage />} />
                         <Route path="/advanced-analytics" element={<AdvancedAnalyticsPage />} />
                         <Route path="/settings" element={<SettingsPage />} />
+                        <Route path="/architecture" element={<SystemArchitecturePage />} /> {/* New Route */}
                     </Routes>
                 </main>
             </div>

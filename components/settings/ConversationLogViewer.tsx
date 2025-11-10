@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Bot, User, Clock, Cpu, FlaskConical, Wind, Thermometer, Brain, Search, Clock4 } from 'lucide-react';
+import { CopyButton } from '../ui';
 
 // --- Type Guard to check if data is a conversation log ---
 export const isConversationJson = (data: any): boolean => {
@@ -17,30 +18,10 @@ export const isConversationJson = (data: any): boolean => {
     );
 };
 
-// --- View Toggle Component ---
-const ViewToggle: React.FC<{ isStructured: boolean; onToggle: () => void }> = ({ isStructured, onToggle }) => (
-    <div className="flex justify-end items-center gap-2 mb-4">
-        <span className={`text-sm font-medium ${!isStructured ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500'}`}>Raw JSON</span>
-        <button
-            onClick={onToggle}
-            role="switch"
-            aria-checked={isStructured}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${isStructured ? 'bg-indigo-600' : 'bg-gray-400'}`}
-        >
-            <span
-                aria-hidden="true"
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isStructured ? 'translate-x-5' : 'translate-x-0'}`}
-            />
-        </button>
-        <span className={`text-sm font-medium ${isStructured ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500'}`}>Structured View</span>
-    </div>
-);
-
-
 // --- Helper Components for Structured View ---
 
 const MetadataItem: React.FC<{ icon: React.ReactNode, label: string, value: React.ReactNode }> = ({ icon, label, value }) => (
-    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400" title={label}>
+    <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]" title={label}>
         {icon}
         <span className="font-medium">{value}</span>
     </div>
@@ -49,21 +30,21 @@ const MetadataItem: React.FC<{ icon: React.ReactNode, label: string, value: Reac
 const WeatherDisplay: React.FC<{ weather: any }> = ({ weather }) => {
     const weatherCodes: { [key: number]: string } = { 0: "Clear", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast" };
     return (
-        <div className="mt-2 p-3 rounded-lg border border-sky-200 bg-sky-50 dark:border-sky-800 dark:bg-sky-900/40">
-            <p className="font-bold text-sm text-sky-800 dark:text-sky-200">Weather for {weather.location.name}, {weather.location.country}</p>
-            <div className="flex items-center gap-4 mt-1 text-sky-700 dark:text-sky-300">
+        <div className="mt-2 p-3 rounded-lg border" style={{ backgroundColor: 'var(--status-info-bg)', borderColor: 'var(--border-color)' }}>
+            <p className="font-bold text-sm" style={{ color: 'var(--status-info-text)' }}>Weather for {weather.location.name}, {weather.location.country}</p>
+            <div className="flex items-center gap-4 mt-1" style={{ color: 'var(--status-info-text)', opacity: 0.9 }}>
                 <div className="flex items-center gap-1"><Thermometer size={14} /> {weather.current.temperature}°C (Feels like {weather.current.apparentTemperature}°C)</div>
                 <div className="flex items-center gap-1"><Wind size={14} /> {weather.current.windSpeed} km/h</div>
             </div>
-            <p className="text-xs mt-1 text-sky-600 dark:text-sky-400">{weatherCodes[weather.current.weatherCode] || 'Weather data available'}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--status-info-text)', opacity: 0.8 }}>{weatherCodes[weather.current.weatherCode] || 'Weather data available'}</p>
         </div>
     );
 };
 
 const MoleculeDisplay: React.FC<{ molecule: any }> = ({ molecule }) => (
-    <div className="mt-2 p-3 rounded-lg border border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-900/40">
-        <p className="font-bold text-sm text-purple-800 dark:text-purple-200 flex items-center gap-2"><FlaskConical size={16} /> Molecule Details</p>
-        <div className="text-xs mt-1 space-y-0.5 text-purple-700 dark:text-purple-300">
+    <div className="mt-2 p-3 rounded-lg border" style={{ backgroundColor: 'var(--icon-bg-purple)', borderColor: 'var(--border-color)' }}>
+        <p className="font-bold text-sm flex items-center gap-2" style={{ color: 'var(--icon-fg-purple)' }}><FlaskConical size={16} /> Molecule Details</p>
+        <div className="text-xs mt-1 space-y-0.5" style={{ color: 'var(--icon-fg-purple)', opacity: 0.9 }}>
             <p><strong>IUPAC Name:</strong> {molecule.iupacName}</p>
             <p><strong>Formula:</strong> {molecule.molecularFormula}</p>
             <p><strong>Weight:</strong> {molecule.molecularWeight} g/mol</p>
@@ -72,9 +53,9 @@ const MoleculeDisplay: React.FC<{ molecule: any }> = ({ molecule }) => (
 );
 
 const ThinkingDisplay: React.FC<{ message: any }> = ({ message }) => (
-    <details className="mt-2 text-xs rounded-lg border border-slate-200 bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800/50">
-        <summary className="p-2 font-semibold cursor-pointer text-slate-600 dark:text-zinc-300 flex items-center gap-2"><Brain size={14} /> Behind the Scenes</summary>
-        <div className="p-3 border-t border-slate-200 dark:border-zinc-700 space-y-3">
+    <details className="mt-2 text-xs rounded-lg border" style={{ backgroundColor: 'var(--subtle-bg)', borderColor: 'var(--subtle-border)' }}>
+        <summary className="p-2 font-semibold cursor-pointer flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}><Brain size={14} /> Behind the Scenes</summary>
+        <div className="p-3 border-t space-y-3" style={{ borderColor: 'var(--subtle-border)' }}>
             {message.webSearchMessage && <p><strong>Search Message:</strong> {message.webSearchMessage}</p>}
             {message.searchQueries?.length > 0 && (
                 <div>
@@ -101,7 +82,7 @@ const ThinkingDisplay: React.FC<{ message: any }> = ({ message }) => (
 const UserMessageBubble: React.FC<{ message: any }> = ({ message }) => (
     <div className="flex items-start gap-3 justify-end">
         <div className="max-w-xl">
-            <div className="bg-indigo-500 text-white p-3 rounded-lg rounded-br-none">
+            <div className="text-white p-3 rounded-lg rounded-br-none" style={{ backgroundColor: 'var(--accent-color)' }}>
                 <p className="font-bold text-xs mb-1 opacity-80">ID: {message.id}</p>
                 <div className="text-sm space-y-2">
                     <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
@@ -121,8 +102,8 @@ const ModelMessageBubble: React.FC<{ message: any }> = ({ message }) => (
      <div className="flex items-start gap-3">
         <div className="max-w-xl">
             <div>
-                <p className="font-bold text-xs mb-1 text-slate-400">ID: {message.id}</p>
-                <div className="text-sm text-slate-800 dark:text-zinc-100 space-y-2">
+                <p className="font-bold text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>ID: {message.id}</p>
+                <div className="text-sm space-y-2" style={{ color: 'var(--text-primary)' }}>
                     <div style={{ whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: message.content.replace(/\n/g, '<br />').replace(/\*\*\*(.*?)\*\*\*/g, '<h3>$1</h3>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>') }}></div>
                     {message.images?.map((img: any, index: number) => (
                         <img key={index} src={`data:${img.mimeType};base64,${img.base64}`} alt="model generation" className="mt-2 rounded-md max-w-[150px]" />
@@ -143,8 +124,7 @@ const ModelMessageBubble: React.FC<{ message: any }> = ({ message }) => (
 
 
 // --- Main Viewer for Conversation JSON ---
-const ConversationLogViewer: React.FC<{ data: any }> = ({ data }) => {
-    const [isStructured, setIsStructured] = useState(true);
+const ConversationLogViewer: React.FC<{ data: any; isStructured: boolean; }> = ({ data, isStructured }) => {
     let messages: any[] = [];
     let parseError: string | null = null;
     let rawJsonString = '';
@@ -179,19 +159,22 @@ const ConversationLogViewer: React.FC<{ data: any }> = ({ data }) => {
 
     if (parseError) {
         return (
-            <div className="text-red-500 bg-red-50 dark:bg-red-900/30 p-4 rounded-lg">
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--status-danger-bg)', color: 'var(--status-danger-text)' }}>
                 <p className="font-bold">Error rendering structured view:</p>
-                <p className="text-sm mt-1">{parseError}</p>
+                <p className="text-sm mt-1" style={{ opacity: 0.9 }}>{parseError}</p>
                 <p className="text-sm mt-2 font-bold">Raw Data:</p>
-                <pre className="text-xs bg-red-100 dark:bg-red-900/50 p-2 mt-1 rounded overflow-x-auto"><code>{rawJsonString}</code></pre>
+                <div className="relative mt-1 group">
+                    <CopyButton textToCopy={rawJsonString} />
+                    <pre className="text-xs p-2 rounded overflow-x-auto" style={{ backgroundColor: 'var(--status-danger-subtle-bg)' }}>
+                        <code style={{ color: 'var(--status-danger-text)' }}>{rawJsonString}</code>
+                    </pre>
+                </div>
             </div>
         )
     }
 
     return (
-        <div>
-            <ViewToggle isStructured={isStructured} onToggle={() => setIsStructured(!isStructured)} />
-            
+        <div className="relative group">
             <div className="max-h-[60vh] overflow-y-auto pr-2">
                 {isStructured ? (
                     <div className="space-y-6">
@@ -205,9 +188,12 @@ const ConversationLogViewer: React.FC<{ data: any }> = ({ data }) => {
                         ))}
                     </div>
                 ) : (
-                    <pre className="text-xs bg-slate-100 dark:bg-zinc-800 p-3 rounded-md">
-                        <code>{rawJsonString}</code>
-                    </pre>
+                    <div className="relative">
+                        <CopyButton textToCopy={rawJsonString} />
+                        <pre className="text-xs p-3 rounded-md overflow-auto" style={{ backgroundColor: 'var(--subtle-bg)' }}>
+                            <code>{rawJsonString}</code>
+                        </pre>
+                    </div>
                 )}
             </div>
         </div>

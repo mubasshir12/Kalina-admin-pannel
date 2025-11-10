@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Settings, LineChart, History, Users, TrendingUp, ChevronsLeft } from 'lucide-react';
+import { Home, Settings, LineChart, History, Users, TrendingUp, ChevronsLeft, Network } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
 interface SidebarProps {
@@ -108,12 +108,25 @@ const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, className,
                 </div>
             </nav>
             <div className={`p-4 border-t border-[var(--sidebar-border)]`}>
-                <div className={`grid grid-cols-2 gap-2 items-center justify-items-center ${isCollapsed ? 'md:grid-cols-1' : ''}`}>
+                <div className={`grid grid-cols-3 gap-2 items-center justify-items-center ${isCollapsed ? 'md:grid-cols-1' : ''}`}>
                     <div
                         className="sidebar-tooltip-wrapper w-full flex justify-center"
                         data-tooltip={theme === 'light' ? 'Dark Mode' : 'Light Mode'}
                     >
                         <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+                    </div>
+                    <div
+                        className="sidebar-tooltip-wrapper w-full flex justify-center"
+                        data-tooltip="Architecture"
+                    >
+                        <NavLink
+                            to="/architecture"
+                            className={getFooterNavLinkClass}
+                            aria-label="System Architecture"
+                            onClick={closeSidebar}
+                        >
+                            <Network size={20} />
+                        </NavLink>
                     </div>
                     <div
                         className="sidebar-tooltip-wrapper w-full flex justify-center"
