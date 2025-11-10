@@ -134,8 +134,8 @@ const ArchitectureNode: React.FC<{
 
 const connections = [
     { start: 'client-app-port-bottom', end: 'agent-fn-port-top', color: 'var(--accent-color)' },
-    { start: 'admin-panel-port-bottom', end: 'agent-fn-port-top', color: 'var(--accent-color)' },
-    { start: 'admin-panel-port-bottom', end: 'news-fn-port-top', color: 'var(--accent-color)' },
+    { start: 'admin-panel-port-left', end: 'agent-fn-port-top', color: 'var(--accent-color)' },
+    { start: 'admin-panel-port-left', end: 'news-fn-port-top', color: 'var(--accent-color)' },
     { start: 'agent-fn-port-right', end: 'groq-api-port-left', color: 'var(--sidebar-text-muted)' },
     { start: 'news-fn-port-right', end: 'gnews-api-port-left', color: 'var(--sidebar-text-muted)' },
     { start: 'news-fn-port-right', end: 'gemini-api-port-left', color: 'var(--sidebar-text-muted)' },
@@ -176,16 +176,23 @@ const SystemArchitecture: React.FC = () => {
             const pathEl = pathRefs.current[index];
 
             if (start && end && pathEl) {
-                const dy = end.y - start.y;
+                // S-CURVE LOGIC
                 const dx = end.x - start.x;
-                const curveY = Math.max(30, Math.abs(dy) * 0.4);
-                const curveX = Math.max(30, Math.abs(dx) * 0.4);
+                const dy = end.y - start.y;
                 let path;
 
-                if (Math.abs(dy) > Math.abs(dx)) { // More vertical than horizontal
-                    path = `M ${start.x} ${start.y} C ${start.x} ${start.y + curveY}, ${end.x} ${end.y - curveY}, ${end.x} ${end.y}`;
-                } else { // More horizontal than vertical
-                    path = `M ${start.x} ${start.y} C ${start.x + curveX} ${start.y}, ${end.x - curveX} ${end.y}, ${end.x} ${end.y}`;
+                if (Math.abs(dx) > Math.abs(dy)) { // More horizontal, S-curve opens vertically
+                    const cx1 = start.x + dx / 2;
+                    const cy1 = start.y;
+                    const cx2 = end.x - dx / 2;
+                    const cy2 = end.y;
+                    path = `M ${start.x} ${start.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${end.x} ${end.y}`;
+                } else { // More vertical, S-curve opens horizontally
+                    const cx1 = start.x;
+                    const cy1 = start.y + dy / 2;
+                    const cx2 = end.x;
+                    const cy2 = end.y - dy / 2;
+                    path = `M ${start.x} ${start.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${end.x} ${end.y}`;
                 }
 
                 pathEl.setAttribute('d', path);

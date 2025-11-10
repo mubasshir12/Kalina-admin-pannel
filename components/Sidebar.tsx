@@ -68,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, className,
 
                 <NavLink to="/architecture" className={() => getNavLinkClass('/architecture')} onClick={closeSidebar}>
                     <Network size={18} className="shrink-0 w-5 text-center" />
-                    <span className={isCollapsed ? 'md:hidden' : ''}>Mind Space</span>
+                    <span className={isCollapsed ? 'md:hidden' : ''}>Space</span>
                 </NavLink>
                 
                 <div className="pt-4">
