@@ -65,14 +65,14 @@ const ModelManagerCard: React.FC<{
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200/80 flex items-center justify-between">
-                        <div>
-                            <span className="text-xs text-slate-500 uppercase font-semibold">Active Model</span>
-                            <p className="font-mono text-base text-slate-800 font-semibold mt-1">{currentModel || 'Not Set'}</p>
+                    <div>
+                        <label className="text-sm font-medium text-slate-600 mb-2 block">Active Model</label>
+                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200/80 flex items-center justify-between">
+                            <p className="font-mono text-base text-slate-800 font-semibold">{currentModel || 'Not Set'}</p>
+                            <button onClick={() => setIsEditing(true)} className="btn btn-secondary">
+                                <Edit size={16}/> Edit
+                            </button>
                         </div>
-                        <button onClick={() => setIsEditing(true)} className="btn btn-secondary">
-                            <Edit size={16}/> Edit
-                        </button>
                     </div>
                 )}
             </div>
@@ -232,7 +232,7 @@ const AgentSettings: React.FC<{ config: AgentConfig, onUpdate: () => void }> = (
 
     return (
         <>
-            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 md:items-start">
                 <ModelManagerCard 
                     currentModel={config.active_model_name}
                     onSave={handleUpdateModel}

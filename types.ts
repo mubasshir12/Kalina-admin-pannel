@@ -1,6 +1,8 @@
 
 
 
+
+
 export interface AgentLog {
   id: number;
   created_at: string;
@@ -112,4 +114,13 @@ export interface AdvancedAnalyticsData {
     summarizationFailureCount: number;
     articleCacheCount: number;
     totalConversations: number;
+}
+
+// Types for Settings Page
+export interface TableDetails {
+    tableName: string;
+    dbName: 'Main App' | 'Agent';
+    rowCount: number;
+    columns: string[];
+    recentRows: any[];
 }

@@ -35,8 +35,8 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         console.error("Kalina AI - Uncaught Application Error:", error, errorInfo);
     }
 
-    // FIX: Class methods can have `this` context issues. Converting `render` to an arrow function ensures `this` is always correctly bound to the component instance, so `this.props` and `this.state` are always available.
-    public render = (): ReactNode => {
+    // FIX: Converted the render method to an arrow function to ensure `this` is always correctly bound to the component instance, preventing errors where `this.props` might be undefined.
+    render = (): ReactNode => {
         if (this.state.hasError) {
             // Render a fallback UI when an error is caught
             return (

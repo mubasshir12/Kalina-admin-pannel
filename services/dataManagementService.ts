@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { TableDetails } from '../types';
 
 // Re-initialize client to keep service self-contained (Main App DB)
 const MAIN_SUPABASE_URL = process.env.VITE_MAIN_SUPABASE_URL || 'https://rrpwqxhwwcgcagzkfoip.supabase.co';
@@ -49,4 +50,44 @@ export async function resetAgentTableSequence(tableName: string) {
 export async function resetAgentTableData(tableName: string) {
     const functionName = `truncate_table_${tableName}`;
     return await dbAgent.rpc(functionName);
+}
+
+/**
+ * Fetches basic details for a given table from either the Main or Agent database.
+ * @param tableName The name of the table.
+ * @param dbName The name of the database group.
+ */
+export async function fetchTableDetails(tableName: string, dbName: 'Main App' | 'Agent'): Promise<{ data: TableDetails | null, error: any }> {
+    const db = dbName === 'Main App' ? dbMain : dbAgent;
+
+    try {
+        // Use a generic column like 'created_at' if 'id' might not exist for ordering
+        let rowsRes = await db.from(tableName).select('*').limit(5).order('id', { ascending: false });
+        // Fallback for tables without an 'id' or if ordering fails
+        if (rowsRes.error) {
+            rowsRes = await db.from(tableName).select('*').limit(5);
+            if (rowsRes.error) throw rowsRes.error;
+        }
+
+        const countRes = await db.from(tableName).select('*', { count: 'exact', head: true });
+        if (countRes.error) throw countRes.error;
+
+        const rowCount = countRes.count || 0;
+        const recentRows = rowsRes.data || [];
+        const columns = recentRows.length > 0 ? Object.keys(recentRows[0]) : [];
+
+        return {
+            data: {
+                tableName,
+                dbName,
+                rowCount,
+                columns,
+                recentRows,
+            },
+            error: null,
+        };
+    } catch (error) {
+        console.error(`Error fetching details for table ${tableName}:`, error);
+        return { data: null, error };
+    }
 }

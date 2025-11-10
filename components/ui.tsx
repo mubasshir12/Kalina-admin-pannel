@@ -18,24 +18,28 @@ import {
     X,
 } from 'lucide-react';
 
-export const PanelCard: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <div className={`panel-card p-6 ${className}`}>
-        {children}
-    </div>
+export const PanelCard = React.forwardRef<HTMLDivElement, { children: React.ReactNode; className?: string }>(
+    ({ children, className = '' }, ref) => (
+        <div ref={ref} className={`panel-card p-6 ${className}`}>
+            {children}
+        </div>
+    )
 );
+PanelCard.displayName = 'PanelCard';
+
 
 export const StatCard: React.FC<{ title: string; value: string | number; description: string; icon: React.ReactNode; borderColor?: string; valueClassName?: string; }> = ({ title, value, description, icon, borderColor = 'border-slate-200', valueClassName = '' }) => (
     <PanelCard className={`relative overflow-hidden border-t-4 ${borderColor}`}>
         <div className="flex items-start justify-between">
             <div className="flex-grow">
-                <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">{title}</p>
-                 <p className={`text-3xl font-bold text-slate-800 mt-2 ${valueClassName}`}>{value}</p>
+                <p className="text-sm font-medium text-[var(--text-secondary)] uppercase tracking-wider">{title}</p>
+                 <p className={`text-3xl font-bold text-[var(--text-primary)] mt-2 ${valueClassName}`}>{value}</p>
             </div>
-            <div className="text-slate-400">
+            <div className="text-[var(--text-secondary)] opacity-70">
                 {icon}
             </div>
         </div>
-        <p className="text-sm text-slate-500 mt-4 truncate" data-tooltip={description}>{description}</p>
+        <p className="text-sm text-[var(--text-secondary)] mt-4 truncate" data-tooltip={description}>{description}</p>
     </PanelCard>
 );
 
@@ -60,7 +64,7 @@ export const timeAgo = (dateInput: string | Date): string => {
 
 // === Shared Log Detail View Components ===
 
-export const LogContentPanel: React.FC<{ title: string; children: React.ReactNode; copyText: string; icon: React.ReactNode }> = ({ title, children, copyText, icon }) => {
+export const LogContentPanel: React.FC<{ title: string; children: React.ReactNode; copyText: string; icon: React.ReactNode; className?: string }> = ({ title, children, copyText, icon, className = '' }) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {
@@ -71,7 +75,7 @@ export const LogContentPanel: React.FC<{ title: string; children: React.ReactNod
     };
 
     return (
-        <div className="panel-card overflow-hidden !p-0 flex flex-col">
+        <div className={`panel-card overflow-hidden !p-0 flex flex-col ${className}`}>
             <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50/50 shrink-0">
                 <div className="flex items-center gap-3">
                      <div className="w-5 flex items-center justify-center text-slate-500">{icon}</div>
@@ -86,7 +90,7 @@ export const LogContentPanel: React.FC<{ title: string; children: React.ReactNod
                     {copied ? <Check size={16} /> : <Copy size={16} />}
                 </button>
             </div>
-            <div className="p-4 text-sm flex-grow min-h-0 bg-[var(--card-bg)]">
+            <div className="p-4 text-sm flex-grow min-h-0 bg-[var(--card-bg)] overflow-y-auto">
                 {children}
             </div>
         </div>
@@ -404,14 +408,14 @@ export const ConfirmationModal: React.FC<{
             role="dialog"
             aria-modal="true"
         >
-            <div className="modal-content w-full max-w-md m-4">
+            <div className="modal-content w-full max-w-lg m-4 !rounded-2xl">
                 <div className="p-6">
                     <h3 id="modal-title" className="text-lg font-bold text-slate-800">{title}</h3>
                     <div className="text-sm text-slate-600 mt-2">
                         {message}
                     </div>
                 </div>
-                <div className="bg-slate-50 px-6 py-4 flex justify-end gap-3 rounded-b-lg">
+                <div className="bg-slate-50 px-6 py-4 flex justify-end gap-3 rounded-b-2xl">
                     <button onClick={onClose} className="btn btn-secondary">{cancelText}</button>
                     <button 
                         onClick={onConfirm} 

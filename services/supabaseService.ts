@@ -2,6 +2,7 @@
 
 
 
+
 import { createClient } from '@supabase/supabase-js';
 // FIX: Import AdvancedAnalyticsData type
 import type { AgentConfig, NewsConfig, MainDashboardData, UserStats, ArticleEngagementData, AdvancedAnalyticsData, BarDataPoint, TrendDataPoint } from '../types';
@@ -170,7 +171,7 @@ export async function fetchUsersData(): Promise<UserStats[]> {
 
     return authUsers.users.map(user => {
         const profile = profilesMap.get(user.id);
-        // FIX: Supabase's user.user_metadata is `unknown`, so direct property access was causing a TS error. Casting it to a known type to safely access `full_name` and `avatar_url`.
+        // FIX: Supabase's user.user_metadata is `unknown`. We must cast it to a known shape to safely access properties like `full_name` and `avatar_url`.
         const metadata = (user.user_metadata as { full_name?: string; avatar_url?: string; }) || {};
         return {
             user: {

@@ -161,7 +161,7 @@ const NewsSettings: React.FC<{ currentConfig: NewsConfig, onUpdate: () => void }
 
     return (
         <>
-            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 md:items-start">
                 <ApiKeyManager
                     title="GNews API Keys"
                     description="Keys for fetching news articles from GNews. The system will cycle through them."

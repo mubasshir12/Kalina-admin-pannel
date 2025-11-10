@@ -162,7 +162,7 @@ const StructuredDetails: React.FC<{ details: string }> = ({ details }) => {
     };
 
     return (
-        <div className="font-mono text-xs text-[var(--text-primary)] h-full overflow-y-hidden">
+        <div className="font-mono text-xs text-[var(--text-primary)]">
              <div className="grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-1">
                 {logLines.map((line, index) => {
                     const { timestamp, level, message, category } = parseLogLine(line);
@@ -240,10 +240,10 @@ const NewsLogDetail: React.FC<{ log: NewsLog; onBack: () => void; }> = ({ log, o
                     </div>
                 </PanelCard>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <LogContentPanel title="Summary" icon={<List size={18} />} copyText={JSON.stringify(log.summary, null, 2)}>
+                    <LogContentPanel title="Summary" icon={<List size={18} />} copyText={JSON.stringify(log.summary, null, 2)} className="h-[855px]">
                         <StructuredSummary summary={log.summary} />
                     </LogContentPanel>
-                    <LogContentPanel title="Details" icon={<Info size={18} />} copyText={log.details || ''}>
+                    <LogContentPanel title="Details" icon={<Info size={18} />} copyText={log.details || ''} className="h-[855px]">
                         <StructuredDetails details={log.details} />
                     </LogContentPanel>
                 </div>

@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PanelCard, ConfirmationModal } from '../components/ui';
-import { resetTableSequence, resetTableData, resetAgentTableSequence, resetAgentTableData } from '../services/dataManagementService';
-import { Database, AlertTriangle, RefreshCw, Trash2, Table, X } from 'lucide-react';
+// FIX: Import missing functions for agent DB management.
+import { resetTableSequence, resetTableData, fetchTableDetails, resetAgentTableSequence, resetAgentTableData } from '../services/dataManagementService';
+import type { TableDetails } from '../types';
+import TableDetailsView from '../components/settings/TableDetailsView';
+import { Database, AlertTriangle, RefreshCw, Trash2, Table, MoreVertical, Info } from 'lucide-react';
+import ReactDOM from 'react-dom';
 
 interface TableInfo {
     name: string;
@@ -38,43 +42,175 @@ const databases: DatabaseGroup[] = [
     }
 ];
 
+const ActionPopover: React.FC<{
+    anchorEl: HTMLElement | null;
+    onClose: () => void;
+    children: React.ReactNode;
+}> = ({ anchorEl, onClose, children }) => {
+    const popoverRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+                onClose();
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [onClose]);
+
+    if (!anchorEl) return null;
+
+    const rect = anchorEl.getBoundingClientRect();
+    const style: React.CSSProperties = {
+        position: 'absolute',
+        top: `${rect.bottom + window.scrollY + 4}px`,
+        left: `${rect.left + window.scrollX}px`,
+        transform: 'translateX(-85%)',
+    };
+
+    return ReactDOM.createPortal(
+        <div ref={popoverRef} style={style} className="z-50 w-48">
+            <div className="custom-dropdown-panel open !static !opacity-100 !transform-none">
+                {children}
+            </div>
+        </div>,
+        document.body
+    );
+};
+
+
 const SettingsPage: React.FC = () => {
     const [selectedTable, setSelectedTable] = useState('profiles');
     const [modal, setModal] = useState<{ type: 'sequence' | 'data' | null; tableName: string | null }>({ type: null, tableName: null });
     const [isLoading, setIsLoading] = useState(false);
     const [confirmationInput, setConfirmationInput] = useState('');
+    const [activePopover, setActivePopover] = useState<{ tableName: string; anchorEl: HTMLElement } | null>(null);
+    const [tableDetails, setTableDetails] = useState<TableDetails | null>(null);
+    const [isFetchingDetails, setIsFetchingDetails] = useState(false);
     
-    // State for the new armed action mechanism
-    const [armedAction, setArmedAction] = useState<'sequence' | 'data' | null>(null);
-    const [countdown, setCountdown] = useState(3);
+    // Refs for the connecting line
+    const selectedTableRef = useRef<HTMLDivElement>(null);
+    const tableListContainerRef = useRef<HTMLDivElement>(null);
+    const detailsContainerRef = useRef<HTMLDivElement>(null);
+    // Ref for the SVG path elements to update them imperatively, avoiding React re-renders on scroll.
+    const headerLinePathRef = useRef<SVGPathElement>(null);
+    const rowLinesGroupRef = useRef<SVGGElement>(null);
 
 
     const allTables = databases.flatMap(db => db.tables.map(t => ({ ...t, dbName: db.dbName })));
     const selectedTableInfo = allTables.find(t => t.name === selectedTable);
-    const canResetSequence = selectedTableInfo && !selectedTableInfo.disableSequenceReset;
-
-
-    // Countdown timer effect
-    useEffect(() => {
-        if (!armedAction) return;
-        if (countdown === 0) return;
-
-        const timerId = setTimeout(() => {
-            setCountdown(countdown - 1);
-        }, 1000);
-
-        return () => clearTimeout(timerId);
-    }, [armedAction, countdown]);
-
-    const handleArmAction = (actionType: 'sequence' | 'data') => {
-        setCountdown(3);
-        setArmedAction(actionType);
-    };
     
-    const handleDisarmAction = () => {
-        setArmedAction(null);
-    };
+    // Effect to calculate and draw the connecting line
+    useEffect(() => {
+        // Imperatively update the SVG path to prevent re-renders during scroll, ensuring max performance.
+        const updateConnectingLines = () => {
+            const startElement = selectedTableRef.current;
+            const endHeaderElement = document.getElementById('table-details-header');
+            const listContainer = tableListContainerRef.current;
+            const detailsContainer = detailsContainerRef.current;
+            const headerPathElement = headerLinePathRef.current;
+            const rowLinesGroup = rowLinesGroupRef.current;
 
+            // Clear existing paths first
+            if (headerPathElement) headerPathElement.setAttribute('d', '');
+            if (rowLinesGroup) rowLinesGroup.innerHTML = '';
+
+            if (startElement && listContainer && detailsContainer && window.innerWidth >= 768) {
+                const startRect = startElement.getBoundingClientRect();
+                const listContainerRect = listContainer.getBoundingClientRect();
+                const detailsContainerRect = detailsContainer.getBoundingClientRect();
+
+                const x1 = listContainerRect.right;
+                const y1 = startRect.top + startRect.height / 2;
+                const x2 = detailsContainerRect.left;
+
+                // Define a single, shared turning point for all lines.
+                const intermediateX = x1 + (x2 - x1) / 2;
+                
+                // 1. Draw header line (if header is visible)
+                if (endHeaderElement && headerPathElement) {
+                    const endHeaderRect = endHeaderElement.getBoundingClientRect();
+                    const y2_header = endHeaderRect.top + endHeaderRect.height / 2;
+                    const headerPathData = `M ${x1} ${y1} H ${intermediateX} V ${y2_header} H ${x2}`;
+                    headerPathElement.setAttribute('d', headerPathData);
+                }
+                
+                // 2. Draw row lines (if rows are visible)
+                if (rowLinesGroup) {
+                    for (let i = 0; i < 5; i++) { // Max 5 rows
+                        const endRowElement = document.getElementById(`details-row-${i}`);
+                        if (endRowElement) {
+                            const endRowRect = endRowElement.getBoundingClientRect();
+                            const y2_row = endRowRect.top + endRowRect.height / 2;
+                            
+                            // Use the shared intermediateX for the row path
+                            const rowPathData = `M ${x1} ${y1} H ${intermediateX} V ${y2_row} H ${x2}`;
+                            
+                            // Create and append path element imperatively
+                            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                            path.setAttribute('d', rowPathData);
+                            path.setAttribute('stroke', 'var(--success)');
+                            path.setAttribute('stroke-width', '2');
+                            path.setAttribute('fill', 'none');
+                            path.setAttribute('stroke-linecap', 'round');
+                            path.classList.add('connecting-line');
+                            rowLinesGroup.appendChild(path);
+                        }
+                    }
+                }
+            }
+        };
+
+        // Throttle updates using requestAnimationFrame for smooth scrolling
+        let isTicking = false;
+        const scrollHandler = () => {
+            if (!isTicking) {
+                window.requestAnimationFrame(() => {
+                    updateConnectingLines();
+                    isTicking = false;
+                });
+                isTicking = true;
+            }
+        };
+
+        // Delay initial calculation to ensure DOM is ready
+        const timeoutId = setTimeout(updateConnectingLines, 100);
+        const mainElement = document.querySelector('main');
+
+        window.addEventListener('resize', updateConnectingLines);
+        mainElement?.addEventListener('scroll', scrollHandler);
+
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('resize', updateConnectingLines);
+            mainElement?.removeEventListener('scroll', scrollHandler);
+        };
+    }, [selectedTable, tableDetails, isFetchingDetails]);
+
+
+    useEffect(() => {
+        if (!selectedTableInfo) {
+            setTableDetails(null);
+            return;
+        }
+
+        const getDetails = async () => {
+            setIsFetchingDetails(true);
+            setTableDetails(null); 
+            const { data, error } = await fetchTableDetails(selectedTableInfo.name, selectedTableInfo.dbName);
+            if (error) {
+                console.error(`Failed to fetch details for ${selectedTableInfo.name}`, error);
+                alert(`Could not load details for table: ${selectedTableInfo.name}`);
+            } else {
+                setTableDetails(data);
+            }
+            setIsFetchingDetails(false);
+        };
+
+        getDetails();
+    }, [selectedTable]);
+    
     const handleResetSequenceClick = (tableName: string) => {
         setModal({ type: 'sequence', tableName });
     };
@@ -87,7 +223,6 @@ const SettingsPage: React.FC = () => {
     const closeModal = () => {
         setModal({ type: null, tableName: null });
         setConfirmationInput('');
-        handleDisarmAction(); // Also disarm on modal close
     };
 
     const handleConfirmReset = async () => {
@@ -117,87 +252,30 @@ const SettingsPage: React.FC = () => {
             }
         } catch (error: any) {
             console.error(`Failed to perform ${modal.type} reset for ${modal.tableName}:`, error);
-            
-            const dbErrorMessage = error?.details || error?.message || 'An unexpected error occurred.';
-            let userFriendlyMessage = `Failed to perform ${modal.type} reset for '${modal.tableName}'.\n\n`;
-
-            if (dbErrorMessage.includes('does not exist')) {
-                if (dbErrorMessage.includes('function')) {
-                    userFriendlyMessage += `Reason: The required database function for this action was not found.\n\nPlease ensure you have created the correct function (e.g., 'reset_${modal.tableName}_id_sequence') in the Supabase SQL Editor.`;
-                } else {
-                    userFriendlyMessage += `Database Error: ${dbErrorMessage}\n\nThis can happen if the table's primary key column is not a standard auto-incrementing 'id'.`;
-                }
-            } else if (dbErrorMessage.includes('No sequence found for table')) {
-                userFriendlyMessage += `Reason: ${dbErrorMessage}\n\nPlease check that the primary key column is named 'id' and is an auto-incrementing type.`;
-            } else {
-                userFriendlyMessage += `Database Error: ${dbErrorMessage}`;
-            }
-
-            alert(userFriendlyMessage);
+            alert(`Failed to perform ${modal.type} reset for '${modal.tableName}': ${error.message}`);
         } finally {
             setIsLoading(false);
             closeModal();
         }
     };
-    
-    const ActionCard: React.FC<{
-        title: string,
-        description: string,
-        actionType: 'sequence' | 'data',
-    }> = ({ title, description, actionType }) => {
-        const isArmed = armedAction === actionType;
-        const isCountdownActive = isArmed && countdown > 0;
-        const confirmHandler = actionType === 'sequence' 
-            ? () => handleResetSequenceClick(selectedTableInfo!.name)
-            : () => handleResetDataClick(selectedTableInfo!.name);
-            
-        const buttonText = actionType === 'sequence' ? 'Arm Action' : 'Arm Deletion';
-        const buttonIcon = actionType === 'sequence' ? <RefreshCw size={16} /> : <Trash2 size={16} />;
-
-        return (
-            <div className="bg-[var(--subtle-bg)] border border-[var(--subtle-border)] p-4 rounded-lg flex flex-col justify-between items-start gap-4">
-                <div>
-                    <h4 className="font-semibold text-[var(--text-primary)]">{title}</h4>
-                    <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-md">{description}</p>
-                </div>
-                <div className="flex items-center justify-end gap-3 w-full shrink-0">
-                    {isArmed ? (
-                        <>
-                            <button
-                                onClick={confirmHandler}
-                                className={`btn btn-danger justify-center ${!isCountdownActive ? 'animate-pulse-danger' : ''}`}
-                                disabled={isCountdownActive}
-                            >
-                                {isCountdownActive ? (
-                                    <span className="font-mono">Confirm in T-{countdown}s</span>
-                                ) : (
-                                    <><AlertTriangle size={16} /> Confirm</>
-                                )}
-                            </button>
-                            <button onClick={handleDisarmAction} className="btn btn-secondary !p-2.5" aria-label="Cancel">
-                                <X size={16} />
-                            </button>
-                        </>
-                    ) : (
-                        <button 
-                            onClick={() => handleArmAction(actionType)}
-                            className={`btn ${actionType === 'sequence' ? 'btn-danger-secondary' : 'btn-danger'} justify-center`}
-                            disabled={armedAction !== null}
-                        >
-                            {buttonIcon} {buttonText}
-                        </button>
-                    )}
-                </div>
-            </div>
-        );
-    };
 
     return (
         <>
+            <svg className="hidden md:block fixed top-0 left-0 w-full h-full pointer-events-none z-10">
+                <path
+                    ref={headerLinePathRef}
+                    stroke="var(--success)"
+                    strokeWidth="2"
+                    fill="none"
+                    className="connecting-line"
+                    strokeLinecap="round"
+                />
+                <g ref={rowLinesGroupRef}></g>
+            </svg>
             <div className="flex flex-col md:flex-row gap-8">
                 {/* --- Left Sidebar: Database Navigator --- */}
                 <aside className="w-full md:w-1/3 lg:w-1/4 xl:w-1/5 shrink-0">
-                    <div className="p-4 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] sticky top-24">
+                    <div ref={tableListContainerRef} className="p-4 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] sticky top-24">
                         {databases.map(dbGroup => (
                             <div key={dbGroup.dbName} className="mb-6 last:mb-0">
                                 <h3 className="flex items-center gap-2 font-bold text-lg text-slate-800 mb-3 px-2">
@@ -206,21 +284,38 @@ const SettingsPage: React.FC = () => {
                                 </h3>
                                 <div className="space-y-1">
                                     {dbGroup.tables.map(table => (
-                                        <button 
+                                        <div 
                                             key={table.name}
-                                            onClick={() => {
-                                                setSelectedTable(table.name);
-                                                handleDisarmAction();
-                                            }}
-                                            className={`w-full text-left flex items-center gap-2.5 p-2 rounded-md text-sm font-medium transition-colors ${
+                                            ref={selectedTable === table.name ? selectedTableRef : null}
+                                            className={`group w-full flex items-center justify-between p-2 rounded-md transition-colors cursor-pointer ${
                                                 selectedTable === table.name
-                                                    ? 'bg-[var(--accent-glow)] text-[var(--accent-text)]'
-                                                    : 'text-[var(--sidebar-text-secondary)] hover:bg-[var(--sidebar-link-hover-bg)] hover:text-[var(--sidebar-text-primary)]'
+                                                    ? 'bg-indigo-100 dark:bg-indigo-900/20'
+                                                    : 'hover:bg-[var(--sidebar-link-hover-bg)]'
                                             }`}
+                                            onClick={() => setSelectedTable(table.name)}
                                         >
-                                            <Table size={14} className="shrink-0" />
-                                            <span className="truncate font-mono">{table.name}</span>
-                                        </button>
+                                            <div
+                                                className={`flex-grow text-left flex items-center gap-2.5 text-sm font-medium ${
+                                                    selectedTable === table.name 
+                                                        ? 'text-indigo-600 dark:text-indigo-400' 
+                                                        : 'text-[var(--sidebar-text-secondary)] group-hover:text-[var(--sidebar-text-primary)]'
+                                                }`}
+                                            >
+                                                <Table size={14} className="shrink-0" />
+                                                <span className="truncate font-mono">{table.name}</span>
+                                            </div>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setActivePopover({ tableName: table.name, anchorEl: e.currentTarget }); }}
+                                                className={`p-1 rounded-md shrink-0 ${
+                                                    selectedTable === table.name
+                                                        ? 'text-indigo-600 dark:text-indigo-400'
+                                                        : 'text-[var(--sidebar-text-secondary)] opacity-0 group-hover:opacity-100'
+                                                }`}
+                                                aria-label={`More options for ${table.name}`}
+                                            >
+                                                <MoreVertical size={16} />
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -230,65 +325,73 @@ const SettingsPage: React.FC = () => {
 
                 {/* --- Right Panel: Management Area --- */}
                 <main className="flex-1">
-                    {selectedTableInfo ? (
-                        <PanelCard>
-                            <div className="border-b border-[var(--border-color)] pb-4 mb-6">
-                                <h2 className="text-2xl font-bold text-slate-800 font-mono">{selectedTableInfo.name}</h2>
-                                <p className="text-sm text-slate-500 mt-1">{selectedTableInfo.description}</p>
+                    {isFetchingDetails ? (
+                        <PanelCard ref={detailsContainerRef}>
+                            <div className="flex flex-col items-center justify-center h-96">
+                                <span className="loader"></span>
+                                <p className="mt-4 text-slate-500 font-medium">Fetching details for <span className="font-mono">{selectedTable}</span>...</p>
                             </div>
-                            
-                            <div className="bg-red-100 dark:bg-red-950/60 rounded-lg p-6 border border-red-300 dark:border-red-700">
-                                <div className="flex items-center gap-3">
-                                    <AlertTriangle className="w-6 h-6 text-red-700 dark:text-red-400" />
-                                    <h3 className="text-xl font-bold text-red-900 dark:text-red-200">Danger Zone</h3>
-                                </div>
-                                <p className="text-sm text-red-800 mt-2 mb-6 ml-9 dark:text-red-300">
-                                    These actions are irreversible and can lead to data loss. Be absolutely certain before proceeding.
+                        </PanelCard>
+                    ) : tableDetails ? (
+                        <TableDetailsView ref={detailsContainerRef} details={tableDetails} description={selectedTableInfo?.description || ''} />
+                    ) : selectedTableInfo ? (
+                        <PanelCard ref={detailsContainerRef}>
+                            <div className="text-center py-10">
+                                <AlertTriangle className="mx-auto h-12 w-12 text-red-400" />
+                                <h3 className="mt-2 text-lg font-medium text-slate-800">Failed to Load Details</h3>
+                                <p className="mt-1 text-sm text-slate-500">
+                                Could not fetch details for the table <strong className="font-mono">{selectedTableInfo.name}</strong>. Please check the console for errors.
                                 </p>
-                                
-                                <div className={`grid grid-cols-1 ${canResetSequence ? 'sm:grid-cols-2' : ''} gap-4`}>
-                                    {canResetSequence && (
-                                        <ActionCard 
-                                            title="Reset ID Sequence"
-                                            description="Resets the table's primary key sequence. The next new row will have an ID of 1."
-                                            actionType="sequence"
-                                        />
-                                    )}
-                                    <ActionCard 
-                                        title="Delete All Table Data"
-                                        description="Permanently deletes all rows from this table. This cannot be undone."
-                                        actionType="data"
-                                    />
-                                </div>
                             </div>
                         </PanelCard>
                     ) : (
-                        <PanelCard>
+                        <PanelCard ref={detailsContainerRef}>
                             <p className="text-slate-500 text-center py-10">Select a table from the left to manage it.</p>
                         </PanelCard>
                     )}
                 </main>
             </div>
+            
+            {activePopover && (
+                <ActionPopover
+                    anchorEl={activePopover.anchorEl}
+                    onClose={() => setActivePopover(null)}
+                >
+                    {!allTables.find(t => t.name === activePopover.tableName)?.disableSequenceReset && (
+                        <button 
+                            onClick={() => { handleResetSequenceClick(activePopover.tableName); setActivePopover(null); }}
+                            className="custom-dropdown-option !flex items-center gap-2 text-amber-600 dark:text-amber-400 hover:!bg-amber-50 dark:hover:!bg-amber-900/50"
+                        >
+                            <RefreshCw size={14} /> Reset ID Sequence
+                        </button>
+                    )}
+                    <button 
+                        onClick={() => { handleResetDataClick(activePopover.tableName); setActivePopover(null); }}
+                        className="custom-dropdown-option !flex items-center gap-2 text-red-600 dark:text-red-400 hover:!bg-red-50 dark:hover:!bg-red-900/50"
+                    >
+                        <Trash2 size={14} /> Delete All Data...
+                    </button>
+                </ActionPopover>
+            )}
 
             {/* Modal for Reset IDs */}
             <ConfirmationModal
                 isOpen={modal.type === 'sequence'}
                 onClose={closeModal}
                 onConfirm={handleConfirmReset}
-                title="Confirm ID Reset"
+                title="Reset ID Sequence"
                 message={
                     <div className="space-y-3">
-                        <div className="flex items-start gap-3 p-3 bg-[var(--status-warning-bg)] border border-yellow-500/20 rounded-md">
+                        <div className="flex items-start gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800/50 rounded-md">
                             <AlertTriangle className="w-8 h-8 text-yellow-500 shrink-0" />
-                            <p className="text-sm text-[var(--status-warning-text)]">
-                                This is a potentially destructive action. Are you sure you want to reset the IDs for the <strong>{modal.tableName}</strong> table?
+                            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                Are you sure you want to reset the IDs for the <strong>{modal.tableName}</strong> table? The next new row will get ID 1.
                             </p>
                         </div>
-                         <p>The next entry created will have an ID of 1. This can affect data relationships if foreign keys are not handled carefully.</p>
                     </div>
                 }
-                confirmText={isLoading ? "Resetting..." : "I understand, reset IDs"}
-                confirmButtonClass="btn-danger"
+                confirmText={isLoading ? "Resetting..." : "Confirm Reset"}
+                confirmButtonClass="btn-danger-secondary"
                 isConfirmDisabled={isLoading}
             />
             
@@ -297,26 +400,29 @@ const SettingsPage: React.FC = () => {
                 isOpen={modal.type === 'data'}
                 onClose={closeModal}
                 onConfirm={handleConfirmReset}
-                title="EXTREME DANGER: Confirm Data Deletion"
+                title="Permanently Delete Table Data"
                 message={
                     <div className="space-y-4">
-                        <div className="flex items-start gap-3 p-3 bg-red-100 dark:bg-red-950/60 border border-red-200 dark:border-red-800 rounded-md">
-                            <AlertTriangle className="w-12 h-12 text-red-500 shrink-0" />
-                            <p className="text-sm text-red-800 dark:text-red-200">
-                                This action will permanently delete <strong>ALL</strong> data from the <strong className="font-mono">{modal.tableName}</strong> table. This cannot be undone.
-                            </p>
+                        <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 rounded-lg">
+                            <AlertTriangle className="w-12 h-12 text-red-500 shrink-0 mt-1" />
+                            <div>
+                                <h4 className="font-bold text-red-900 dark:text-red-200">Irreversible Action</h4>
+                                <p className="text-sm text-red-800 dark:text-red-200">
+                                    This will permanently delete <strong>ALL</strong> data from the <strong className="font-mono">{modal.tableName}</strong> table.
+                                </p>
+                            </div>
                         </div>
                         <p>To proceed, please type the name of the table (<strong className="font-mono">{modal.tableName}</strong>) in the box below.</p>
                         <input
                             type="text"
                             value={confirmationInput}
                             onChange={(e) => setConfirmationInput(e.target.value)}
-                            className="form-input w-full mt-3 font-mono"
+                            className="form-input w-full mt-1 font-mono"
                             autoFocus
                         />
                     </div>
                 }
-                confirmText={isLoading ? "Deleting..." : "Permanently Delete Data"}
+                confirmText={isLoading ? "Deleting..." : "Permanently Delete"}
                 confirmButtonClass="btn-danger"
                 isConfirmDisabled={isLoading || confirmationInput !== modal.tableName}
             />

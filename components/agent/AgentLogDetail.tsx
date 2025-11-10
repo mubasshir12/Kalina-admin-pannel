@@ -161,7 +161,7 @@ const UrlPreprocessorView: React.FC<{ response: any }> = ({ response }) => {
 
 const renderResponsePanel = (log: AgentLog) => {
     const copyText = JSON.stringify(log.response, null, 2);
-    const codeBlockClasses = "whitespace-pre-wrap bg-[var(--body-bg)] text-[var(--text-primary)] p-3 rounded-md text-xs h-full overflow-y-auto";
+    const codeBlockClasses = "whitespace-pre-wrap bg-[var(--body-bg)] text-[var(--text-primary)] p-3 rounded-md text-xs max-h-[500px] overflow-y-auto";
 
     const structuredViews: { [key: string]: { icon: React.ReactNode, title: string, component: React.ReactNode } } = {
         'url-extractor': { icon: <Link size={18} />, title: "URL Extractor", component: <UrlExtractorView response={log.response} /> },
@@ -225,7 +225,7 @@ const AgentLogDetail: React.FC<{ log: AgentLog; onBack: () => void; }> = ({ log,
         ...commonMetadata
     ];
     
-    const codeBlockClasses = "whitespace-pre-wrap bg-[var(--body-bg)] text-[var(--text-primary)] p-3 rounded-md text-xs h-full overflow-y-auto";
+    const codeBlockClasses = "whitespace-pre-wrap bg-[var(--body-bg)] text-[var(--text-primary)] p-3 rounded-md text-xs max-h-[500px] overflow-y-auto";
 
     const errorMessagePanel = log.error_message ? (
         <div className="panel-card border-l-4 border-red-500 bg-red-50/80 !p-4">
@@ -283,7 +283,7 @@ const AgentLogDetail: React.FC<{ log: AgentLog; onBack: () => void; }> = ({ log,
                 {errorMessagePanel}
 
                 {/* Content Panels Grid (side-by-side on md+) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:items-start">
                     <LogContentPanel title="Prompt" icon={<Terminal size={18} />} copyText={log.prompt}>
                         <pre className={codeBlockClasses}>{log.prompt}</pre>
                     </LogContentPanel>
