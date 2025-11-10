@@ -82,9 +82,9 @@ const AgentDbIcon = () => (
 
 // --- Generic Components ---
 
-const Group: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className }) => (
-    <div className={`relative p-6 pt-8 border-2 border-dashed border-slate-700/70 rounded-xl ${className}`}>
-        <h3 className="absolute -top-3 left-4 bg-zinc-950 px-2 text-sm font-bold text-slate-400 tracking-wider">{title}</h3>
+const Group: React.FC<{ title: string; children: React.ReactNode; className?: string; titlePosition?: 'left' | 'right' }> = ({ title, children, className, titlePosition = 'left' }) => (
+    <div className={`relative p-6 pt-8 rounded-xl ${className}`}>
+        <h3 className={`absolute -top-3 px-2 bg-zinc-950 text-sm font-bold text-slate-400 tracking-wider ${titlePosition === 'left' ? 'left-4' : 'right-4'}`}>{title}</h3>
         {children}
     </div>
 );
@@ -94,41 +94,62 @@ const ArchitectureNode: React.FC<{
     title: string;
     description: string;
     icon: React.ReactNode;
-}> = ({ id, title, description, icon }) => (
+    glowType: 'accent' | 'purple' | 'sky' | 'green';
+    textPosition?: 'top' | 'bottom';
+}> = ({ id, title, description, icon, glowType, textPosition = 'bottom' }) => (
     <div id={id} className="relative flex flex-col items-center text-center w-48">
-        {/* Corrected port positions to align with the 64x64px SVG icon */}
-        <div id={`${id}-port-right`} className="port" style={{ top: '32px', left: 'calc(50% + 32px)' }}></div>
-        <div id={`${id}-port-left`} className="port" style={{ top: '32px', left: 'calc(50% - 32px)' }}></div>
-        <div id={`${id}-port-top`} className="port" style={{ top: '0', left: '50%' }}></div>
-        <div id={`${id}-port-bottom`} className="port" style={{ top: '64px', left: '50%' }}></div>
+        {/* Conditional port positioning */}
+        {textPosition === 'bottom' && <>
+            <div id={`${id}-port-right`} className="port" style={{ top: '32px', left: 'calc(50% + 28px)' }}></div>
+            <div id={`${id}-port-left`} className="port" style={{ top: '32px', left: 'calc(50% - 28px)' }}></div>
+            <div id={`${id}-port-top`} className="port" style={{ top: '4px', left: '50%' }}></div>
+            <div id={`${id}-port-bottom`} className="port" style={{ top: '60px', left: '50%' }}></div>
+        </>}
+        {textPosition === 'top' && <>
+            {/* Offset by ~40px for the text block above */}
+            <div id={`${id}-port-right`} className="port" style={{ top: '72px', left: 'calc(50% + 28px)' }}></div>
+            <div id={`${id}-port-left`} className="port" style={{ top: '72px', left: 'calc(50% - 28px)' }}></div>
+            <div id={`${id}-port-top`} className="port" style={{ top: '44px', left: '50%' }}></div>
+            <div id={`${id}-port-bottom`} className="port" style={{ top: '90px', left: '50%' }}></div>
+        </>}
 
-        <div className="w-16 h-16 text-white transition-transform duration-300 hover:scale-110">{icon}</div>
+        {/* Conditional text rendering */}
+        {textPosition === 'top' && (
+            <div className="mb-2">
+                <h4 className="font-bold text-sm text-slate-100">{title}</h4>
+                <p className="text-xs text-slate-400">{description}</p>
+            </div>
+        )}
 
-        <div className="mt-2">
-            <h4 className="font-bold text-sm text-slate-100">{title}</h4>
-            <p className="text-xs text-slate-400">{description}</p>
-        </div>
+        <div className={`w-16 h-16 text-white transition-all duration-300 hover:scale-110 glow-${glowType}`}>{icon}</div>
+
+        {textPosition === 'bottom' && (
+            <div className="mt-2">
+                <h4 className="font-bold text-sm text-slate-100">{title}</h4>
+                <p className="text-xs text-slate-400">{description}</p>
+            </div>
+        )}
     </div>
 );
 
 const connections = [
-    { start: 'client-app-port-bottom', end: 'agent-fn-port-top', color: 'var(--accent-text)' },
-    { start: 'admin-panel-port-bottom', end: 'agent-fn-port-top', color: 'var(--accent-text)' },
-    { start: 'admin-panel-port-bottom', end: 'news-fn-port-top', color: 'var(--accent-text)' },
-    { start: 'agent-fn-port-right', end: 'groq-api-port-left', color: 'var(--text-secondary)' },
-    { start: 'news-fn-port-right', end: 'gnews-api-port-left', color: 'var(--text-secondary)' },
-    { start: 'news-fn-port-right', end: 'gemini-api-port-left', color: 'var(--text-secondary)' },
-    { start: 'agent-fn-port-bottom', end: 'db-agent-port-top', color: 'var(--accent-text)' },
-    { start: 'news-fn-port-bottom', end: 'db-main-port-top', color: 'var(--accent-text)' },
-    { start: 'client-app-port-bottom', end: 'db-main-port-top', color: 'var(--status-success-text)', type: 'long' },
-    { start: 'admin-panel-port-bottom', end: 'db-main-port-top', color: 'var(--status-success-text)', type: 'long' },
-    { start: 'admin-panel-port-bottom', end: 'db-agent-port-top', color: 'var(--status-success-text)', type: 'long' },
+    { start: 'client-app-port-bottom', end: 'agent-fn-port-top', color: 'var(--accent-color)' },
+    { start: 'admin-panel-port-bottom', end: 'agent-fn-port-top', color: 'var(--accent-color)' },
+    { start: 'admin-panel-port-bottom', end: 'news-fn-port-top', color: 'var(--accent-color)' },
+    { start: 'agent-fn-port-right', end: 'groq-api-port-left', color: 'var(--sidebar-text-muted)' },
+    { start: 'news-fn-port-right', end: 'gnews-api-port-left', color: 'var(--sidebar-text-muted)' },
+    { start: 'news-fn-port-right', end: 'gemini-api-port-left', color: 'var(--sidebar-text-muted)' },
+    { start: 'agent-fn-port-bottom', end: 'db-agent-port-top', color: 'var(--accent-color)' },
+    { start: 'news-fn-port-bottom', end: 'db-main-port-top', color: 'var(--accent-color)' },
+    { start: 'client-app-port-bottom', end: 'db-main-port-top', color: '#22C55E' },
+    { start: 'admin-panel-port-bottom', end: 'db-main-port-top', color: '#22C55E' },
+    { start: 'admin-panel-port-bottom', end: 'db-agent-port-top', color: '#22C55E' },
 ];
 
 const markerColors: Record<string, string> = {
-    'var(--accent-text)': 'accent',
-    'var(--status-success-text)': 'success',
-    'var(--text-secondary)': 'secondary',
+    'var(--accent-color)': 'accent',
+    '#22C55E': 'success',
+    'var(--sidebar-text-muted)': 'secondary',
 };
 
 const SystemArchitecture: React.FC = () => {
@@ -155,22 +176,16 @@ const SystemArchitecture: React.FC = () => {
             const pathEl = pathRefs.current[index];
 
             if (start && end && pathEl) {
+                const dy = end.y - start.y;
+                const dx = end.x - start.x;
+                const curveY = Math.max(30, Math.abs(dy) * 0.4);
+                const curveX = Math.max(30, Math.abs(dx) * 0.4);
                 let path;
-                
-                if (conn.type === 'long') {
-                    const midY = start.y + (end.y - start.y) / 2;
-                    path = `M ${start.x} ${start.y} V ${midY} H ${end.x} V ${end.y}`;
-                } else {
-                    const dy = end.y - start.y;
-                    const dx = end.x - start.x;
-                    const curveY = Math.max(30, Math.abs(dy) * 0.4);
-                    const curveX = Math.max(30, Math.abs(dx) * 0.4);
 
-                    if (Math.abs(dy) > Math.abs(dx)) {
-                        path = `M ${start.x} ${start.y} C ${start.x} ${start.y + curveY}, ${end.x} ${end.y - curveY}, ${end.x} ${end.y}`;
-                    } else {
-                        path = `M ${start.x} ${start.y} C ${start.x + curveX} ${start.y}, ${end.x - curveX} ${end.y}, ${end.x} ${end.y}`;
-                    }
+                if (Math.abs(dy) > Math.abs(dx)) { // More vertical than horizontal
+                    path = `M ${start.x} ${start.y} C ${start.x} ${start.y + curveY}, ${end.x} ${end.y - curveY}, ${end.x} ${end.y}`;
+                } else { // More horizontal than vertical
+                    path = `M ${start.x} ${start.y} C ${start.x + curveX} ${start.y}, ${end.x - curveX} ${end.y}, ${end.x} ${end.y}`;
                 }
 
                 pathEl.setAttribute('d', path);
@@ -211,17 +226,17 @@ const SystemArchitecture: React.FC = () => {
     }, [drawLines]);
 
     return (
-        <div ref={containerRef} className="relative w-full min-w-[1400px] p-12 flex flex-col items-center justify-between min-h-[1000px] gap-20">
+        <div ref={containerRef} className="relative inline-flex flex-col items-center justify-between gap-20 p-12">
             <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
                 <defs>
                     <marker id="arrowhead-accent" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-text)" />
+                        <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-color)" />
                     </marker>
                     <marker id="arrowhead-success" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="var(--status-success-text)" />
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#22C55E" />
                     </marker>
                      <marker id="arrowhead-secondary" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="var(--text-secondary)" />
+                        <polygon points="0 0, 10 3.5, 0 7" fill="var(--sidebar-text-muted)" />
                     </marker>
                 </defs>
                 {connections.map((_, i) => (
@@ -238,32 +253,32 @@ const SystemArchitecture: React.FC = () => {
             <div className="relative z-10 w-full flex flex-col items-center gap-20">
                 {/* --- TOP ROW: Frontends --- */}
                 <div className="flex justify-center items-start gap-24 w-full">
-                    <ArchitectureNode id="client-app" title="Client App" description="User-facing application" icon={<ClientAppIcon />} />
-                    <ArchitectureNode id="admin-panel" title="Admin Panel" description="Monitoring & configuration" icon={<AdminPanelIcon />} />
+                    <ArchitectureNode id="client-app" title="Client App" description="User-facing application" icon={<ClientAppIcon />} glowType="accent" textPosition="top" />
+                    <ArchitectureNode id="admin-panel" title="Admin Panel" description="Monitoring & configuration" icon={<AdminPanelIcon />} glowType="accent" textPosition="top" />
                 </div>
                 
                 {/* --- MIDDLE ROW: Services --- */}
                 <div className="flex justify-between items-start w-full max-w-6xl">
                      <Group title="Supabase Edge Functions" className="w-[400px]">
                         <div className="space-y-8 p-4 flex flex-col items-center">
-                            <ArchitectureNode id="agent-fn" title="Agent" description="Handles AI agent logic" icon={<SupabaseFunctionIcon />} />
-                            <ArchitectureNode id="news-fn" title="News Updater" description="Fetches & formats articles" icon={<SupabaseFunctionIcon isNews />} />
+                            <ArchitectureNode id="agent-fn" title="Agent" description="Handles AI agent logic" icon={<SupabaseFunctionIcon />} glowType="purple" />
+                            <ArchitectureNode id="news-fn" title="News Updater" description="Fetches & formats articles" icon={<SupabaseFunctionIcon isNews />} glowType="purple" />
                         </div>
                     </Group>
                     
-                    <Group title="External APIs" className="w-[400px]">
+                    <Group title="External APIs" className="w-[400px]" titlePosition="right">
                          <div className="space-y-8 p-4 flex flex-col items-center">
-                            <ArchitectureNode id="groq-api" title="Groq API" description="LLM for agent responses" icon={<GroqIcon />} />
-                            <ArchitectureNode id="gnews-api" title="GNews API" description="Fetches news articles" icon={<GNewsIcon />} />
-                            <ArchitectureNode id="gemini-api" title="Gemini API" description="Article summarization" icon={<GeminiIcon />} />
+                            <ArchitectureNode id="groq-api" title="Groq API" description="LLM for agent responses" icon={<GroqIcon />} glowType="sky" />
+                            <ArchitectureNode id="gnews-api" title="GNews API" description="Fetches news articles" icon={<GNewsIcon />} glowType="sky" />
+                            <ArchitectureNode id="gemini-api" title="Gemini API" description="Article summarization" icon={<GeminiIcon />} glowType="sky" />
                         </div>
                     </Group>
                 </div>
 
                 {/* --- BOTTOM ROW: Databases --- */}
                  <div className="flex justify-center items-start gap-24 w-full">
-                     <ArchitectureNode id="db-main" title="Main App DB" description="Users, Content, Interactions" icon={<MainDbIcon />} />
-                     <ArchitectureNode id="db-agent" title="Agent DB" description="Logs & Agent Config" icon={<AgentDbIcon />} />
+                     <ArchitectureNode id="db-main" title="Main App DB" description="Users, Content, Interactions" icon={<MainDbIcon />} glowType="green" />
+                     <ArchitectureNode id="db-agent" title="Agent DB" description="Logs & Agent Config" icon={<AgentDbIcon />} glowType="green" />
                 </div>
             </div>
         </div>
