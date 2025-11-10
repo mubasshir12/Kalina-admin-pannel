@@ -87,8 +87,8 @@ const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ them
             case '/settings':
                 setPageTitle('Settings');
                 break;
-            case '/architecture': // New Page Title
-                setPageTitle('System Architecture');
+            case '/architecture':
+                setPageTitle('Mind Space');
                 break;
             case '/':
             default:

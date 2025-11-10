@@ -65,6 +65,11 @@ const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, className,
                     <TrendingUp size={18} className="shrink-0 w-5 text-center" />
                     <span className={isCollapsed ? 'md:hidden' : ''}>Insights</span>
                 </NavLink>
+
+                <NavLink to="/architecture" className={() => getNavLinkClass('/architecture')} onClick={closeSidebar}>
+                    <Network size={18} className="shrink-0 w-5 text-center" />
+                    <span className={isCollapsed ? 'md:hidden' : ''}>Mind Space</span>
+                </NavLink>
                 
                 <div className="pt-4">
                     {isCollapsed ? <hr className="my-2 border-zinc-700" /> : (
@@ -108,25 +113,12 @@ const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, className,
                 </div>
             </nav>
             <div className={`p-4 border-t border-[var(--sidebar-border)]`}>
-                <div className={`grid grid-cols-3 gap-2 items-center justify-items-center ${isCollapsed ? 'md:grid-cols-1' : ''}`}>
+                <div className={`grid grid-cols-2 gap-2 items-center justify-items-center ${isCollapsed ? 'md:grid-cols-1' : ''}`}>
                     <div
                         className="sidebar-tooltip-wrapper w-full flex justify-center"
                         data-tooltip={theme === 'light' ? 'Dark Mode' : 'Light Mode'}
                     >
                         <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
-                    </div>
-                    <div
-                        className="sidebar-tooltip-wrapper w-full flex justify-center"
-                        data-tooltip="Architecture"
-                    >
-                        <NavLink
-                            to="/architecture"
-                            className={getFooterNavLinkClass}
-                            aria-label="System Architecture"
-                            onClick={closeSidebar}
-                        >
-                            <Network size={20} />
-                        </NavLink>
                     </div>
                     <div
                         className="sidebar-tooltip-wrapper w-full flex justify-center"
