@@ -11,6 +11,7 @@ const ModelManagerCard: React.FC<{
     const [isEditing, setIsEditing] = useState(false);
     const [modelName, setModelName] = useState(currentModel);
     const [isSaving, setIsSaving] = useState(false);
+    const [isModelVisible, setIsModelVisible] = useState(false);
 
     const handleSave = async () => {
         if (!modelName.trim()) {
@@ -67,11 +68,35 @@ const ModelManagerCard: React.FC<{
                 ) : (
                     <div>
                         <label className="text-sm font-medium text-slate-600 mb-2 block">Active Model</label>
-                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200/80 flex items-center justify-between">
-                            <p className="font-mono text-base text-slate-800 font-semibold">{currentModel || 'Not Set'}</p>
-                            <button onClick={() => setIsEditing(true)} className="btn btn-secondary">
-                                <Edit size={16}/> Edit
-                            </button>
+                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 flex-grow min-w-0">
+                                <div className="w-2.5 h-2.5 bg-green-500 rounded-full shrink-0" data-tooltip="Active"></div>
+                                <div className="flex-grow min-w-0">
+                                    <p className="font-mono text-base text-slate-800 font-semibold truncate">
+                                        { isModelVisible 
+                                            ? (currentModel || 'Not Set')
+                                            : (currentModel ? `${currentModel.slice(0, 4)}••••••••${currentModel.slice(-4)}` : 'Not Set')
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-1 shrink-0">
+                                <button 
+                                    onClick={() => setIsModelVisible(!isModelVisible)} 
+                                    className="p-2 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
+                                    data-tooltip={isModelVisible ? "Hide" : "Show"}
+                                >
+                                    {isModelVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                                <button 
+                                    onClick={() => setIsEditing(true)} 
+                                    className="p-2 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
+                                    data-tooltip="Edit"
+                                >
+                                    <Edit size={16} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
