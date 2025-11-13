@@ -48,6 +48,13 @@ async function getChatHistory(sessionId: string) {
     }));
 }
 
+export async function deleteChatHistory(sessionId: string) {
+    return await dbMain
+        .from('ai_chat_history')
+        .delete()
+        .eq('session_id', sessionId);
+}
+
 
 // --- Session and Initialization ---
 
@@ -75,40 +82,6 @@ export async function initializeSession() {
         }
     }
     return { sessionId, history };
-}
-
-
-// --- Gemini API Key Management ---
-
-async function getGeminiKeys(): Promise<string[]> {
-    const { data, error } = await dbMain
-        .from('update_news_config')
-        .select('gemini_api_keys')
-        .eq('id', 1)
-        .single();
-
-    if (error || !data || !data.gemini_api_keys || !Array.isArray(data.gemini_api_keys) || data.gemini_api_keys.length === 0) {
-        console.error("Failed to fetch Gemini API keys from news config, or no keys are configured.", error);
-        return [];
-    }
-    // Ensure we only return valid, non-empty strings
-    return data.gemini_api_keys.filter(key => typeof key === 'string' && key.trim() !== '');
-}
-
-function getNextKey(keys: string[]): string {
-    if (keys.length === 1) return keys[0]; // No need for rotation with a single key
-    
-    let currentIndex = parseInt(sessionStorage.getItem('ai_chat_key_index') || '0', 10);
-    
-    if (isNaN(currentIndex) || currentIndex >= keys.length) {
-        currentIndex = 0;
-    }
-    
-    const key = keys[currentIndex];
-    const nextIndex = (currentIndex + 1) % keys.length;
-    sessionStorage.setItem('ai_chat_key_index', String(nextIndex));
-    
-    return key;
 }
 
 
@@ -165,18 +138,14 @@ const handleGetAnalyticsData = async (section: string) => {
 // --- Core Chat Processing Logic (Streaming) ---
 
 export async function* processUserMessageStream(userInput: string, sessionId: string) {
-    // --- Dynamic Key Fetching & AI Client Initialization ---
-    const geminiKeys = await getGeminiKeys();
-
-    if (geminiKeys.length === 0) {
-        const errorMsg = "Sorry, I can't function right now. No Gemini API keys have been configured in the **News Panel > Settings**. Please ask an administrator to add at least one key.";
+    const apiKey = sessionStorage.getItem('user_gemini_api_key');
+    if (!apiKey) {
+        const errorMsg = "Sorry, I can't function right now. No Gemini API key has been provided in this session. Please set your key to continue.";
         yield { type: 'content', text: errorMsg };
-        // We don't save this to history as it's a configuration error.
         return;
     }
-
-    const selectedKey = getNextKey(geminiKeys);
-    const ai = new GoogleGenAI({ apiKey: selectedKey });
+    
+    const ai = new GoogleGenAI({ apiKey });
     
     yield { type: 'thinking' };
 
@@ -209,12 +178,10 @@ export async function* processUserMessageStream(userInput: string, sessionId: st
 **Example friendly refusal for off-topic questions:** "My apologies, I'm an assistant designed specifically for this dashboard and can't help with general questions. Is there anything about the system's features or analytics I can explain?"`
             },
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Router agent API call failed:", error);
-        const errorMsg = `Error: The AI router failed. This can happen if the configured API key is invalid or has exceeded its quota. Please check the key in the News Panel settings and review the console for details.`;
-        yield { type: 'content', text: errorMsg };
-        await saveChatMessage({ session_id: sessionId, role: 'model', content: { parts: [{ text: errorMsg }] } });
-        return;
+        // Pass the error up to the UI to handle API key errors
+        throw error;
     }
 
 
