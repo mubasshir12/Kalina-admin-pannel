@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 // FIX: Import AdvancedAnalyticsData type
 import type { AgentLog, NewsLog, AgentConfig, NewsConfig, MainDashboardData, UserStats, ArticleEngagementData, AdvancedAnalyticsData, BarDataPoint, TrendDataPoint, ChatMessage } from '../types';

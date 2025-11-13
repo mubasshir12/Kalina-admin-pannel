@@ -1,4 +1,4 @@
-import { GoogleGenAI, FunctionDeclaration, Type } from '@google/genai';
+import { GoogleGenAI, FunctionDeclaration, Type, GenerateContentResponse } from '@google/genai';
 import { createClient } from '@supabase/supabase-js';
 import type { ChatMessage } from '../types';
 import { 
@@ -16,16 +16,6 @@ import {
 const MAIN_SUPABASE_URL = process.env.VITE_MAIN_SUPABASE_URL || 'https://rrpwqxhwwcgcagzkfoip.supabase.co';
 const MAIN_SUPABASE_SERVICE_KEY = process.env.VITE_MAIN_SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJycHdxeGh3d2NnY2Fnemtmb2lwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDIzNDE3NiwiZXhwIjoyMDc1ODEwMTc2fQ.RDHlMAYngd7I_UAzjdr7p0QDy9SgJrga5m_qOZYoGU4';
 const dbMain = createClient(MAIN_SUPABASE_URL, MAIN_SUPABASE_SERVICE_KEY);
-
-
-// --- Gemini AI Client Initialization ---
-let ai: GoogleGenAI;
-try {
-    ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-} catch (error) {
-    console.error("Failed to initialize GoogleGenAI. Is the API_KEY set?", error);
-    // The UI component will handle showing an error message if `ai` is not available.
-}
 
 
 // --- Chat History Management ---
@@ -88,6 +78,40 @@ export async function initializeSession() {
 }
 
 
+// --- Gemini API Key Management ---
+
+async function getGeminiKeys(): Promise<string[]> {
+    const { data, error } = await dbMain
+        .from('update_news_config')
+        .select('gemini_api_keys')
+        .eq('id', 1)
+        .single();
+
+    if (error || !data || !data.gemini_api_keys || !Array.isArray(data.gemini_api_keys) || data.gemini_api_keys.length === 0) {
+        console.error("Failed to fetch Gemini API keys from news config, or no keys are configured.", error);
+        return [];
+    }
+    // Ensure we only return valid, non-empty strings
+    return data.gemini_api_keys.filter(key => typeof key === 'string' && key.trim() !== '');
+}
+
+function getNextKey(keys: string[]): string {
+    if (keys.length === 1) return keys[0]; // No need for rotation with a single key
+    
+    let currentIndex = parseInt(sessionStorage.getItem('ai_chat_key_index') || '0', 10);
+    
+    if (isNaN(currentIndex) || currentIndex >= keys.length) {
+        currentIndex = 0;
+    }
+    
+    const key = keys[currentIndex];
+    const nextIndex = (currentIndex + 1) % keys.length;
+    sessionStorage.setItem('ai_chat_key_index', String(nextIndex));
+    
+    return key;
+}
+
+
 // --- Tool Definitions and Handlers ---
 
 const getAnalyticsDataTool: FunctionDeclaration = {
@@ -141,9 +165,18 @@ const handleGetAnalyticsData = async (section: string) => {
 // --- Core Chat Processing Logic (Streaming) ---
 
 export async function* processUserMessageStream(userInput: string, sessionId: string) {
-    if (!ai) {
-        throw new Error("GoogleGenAI client is not initialized.");
+    // --- Dynamic Key Fetching & AI Client Initialization ---
+    const geminiKeys = await getGeminiKeys();
+
+    if (geminiKeys.length === 0) {
+        const errorMsg = "Sorry, I can't function right now. No Gemini API keys have been configured in the **News Panel > Settings**. Please ask an administrator to add at least one key.";
+        yield { type: 'content', text: errorMsg };
+        // We don't save this to history as it's a configuration error.
+        return;
     }
+
+    const selectedKey = getNextKey(geminiKeys);
+    const ai = new GoogleGenAI({ apiKey: selectedKey });
     
     yield { type: 'thinking' };
 
@@ -151,14 +184,16 @@ export async function* processUserMessageStream(userInput: string, sessionId: st
     await saveChatMessage({ session_id: sessionId, role: 'user', content: { parts: userMessage.parts } });
     
     const history = await getChatHistory(sessionId);
-
-    // Agent 1: Router Agent to decide if a tool is needed
-    const routerResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [...history, userMessage],
-        config: { 
-            tools: [{ functionDeclarations: [getAnalyticsDataTool] }],
-            systemInstruction: `You are a specialized AI assistant for the Kalina AI admin dashboard. Your purpose is to intelligently route user requests. You have two capabilities:
+    
+    // --- Agent 1: Router Agent Call ---
+    let routerResponse: GenerateContentResponse;
+    try {
+        routerResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [...history, userMessage],
+            config: { 
+                tools: [{ functionDeclarations: [getAnalyticsDataTool] }],
+                systemInstruction: `You are a specialized AI assistant for the Kalina AI admin dashboard. Your purpose is to intelligently route user requests. You have two capabilities:
 
 1.  **Internal Knowledge**: You have a deep, built-in understanding of the application's features, pages, metrics, and settings. Use this for questions like "What is the Insights page?", "Explain LTM facts", or "How do I configure the News agent?".
 
@@ -172,8 +207,16 @@ export async function* processUserMessageStream(userInput: string, sessionId: st
 - **If the user's question is general conversation (greetings, off-topic):** You MUST NOT call any tools. Politely explain your specialized role and guide them back to dashboard-related topics.
 
 **Example friendly refusal for off-topic questions:** "My apologies, I'm an assistant designed specifically for this dashboard and can't help with general questions. Is there anything about the system's features or analytics I can explain?"`
-        },
-    });
+            },
+        });
+    } catch (error) {
+        console.error("Router agent API call failed:", error);
+        const errorMsg = `Error: The AI router failed. This can happen if the configured API key is invalid or has exceeded its quota. Please check the key in the News Panel settings and review the console for details.`;
+        yield { type: 'content', text: errorMsg };
+        await saveChatMessage({ session_id: sessionId, role: 'model', content: { parts: [{ text: errorMsg }] } });
+        return;
+    }
+
 
     let fullResponseText = '';
 
@@ -267,20 +310,29 @@ The Kalina AI Admin Panel is a tool for monitoring and managing the entire Kalin
 
 Now, answer the user's question based on the live data provided by the tool (if any) and your extensive internal knowledge. Be helpful, clear, and concise. Remember to embed navigation links properly.`;
 
-        const stream = await ai.models.generateContentStream({
-            model: 'gemini-2.5-flash',
-            contents: finalHistory,
-            config: {
-                systemInstruction,
-            },
-        });
+        // --- Final Streaming Call ---
+        try {
+            const stream = await ai.models.generateContentStream({
+                model: 'gemini-2.5-flash',
+                contents: finalHistory,
+                config: { systemInstruction },
+            });
 
-        for await (const chunk of stream) {
-            const chunkText = chunk.text;
-            if (chunkText) {
-                fullResponseText += chunkText;
-                yield { type: 'content', text: chunkText };
+            for await (const chunk of stream) {
+                const chunkText = chunk.text;
+                if (chunkText) {
+                    fullResponseText += chunkText;
+                    yield { type: 'content', text: chunkText };
+                }
             }
+        } catch(error) {
+            console.error("Final response generation failed:", error);
+            const errorMsg = `Error: The AI failed to generate a response after processing the tool call. Please check the console.`;
+            if (!fullResponseText) { // if nothing was yielded yet
+                yield { type: 'content', text: errorMsg };
+                fullResponseText = errorMsg; // ensure error is saved
+            }
+            throw error; // Let the UI catch this to stop the loading state
         }
 
     } else {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, Component, ErrorInfo, ReactNode, Suspense } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Zap, X, AlertTriangle } from 'lucide-react';
@@ -41,7 +42,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         console.error("Kalina AI - Uncaught Application Error:", error, errorInfo);
     }
 
-    // FIX: Reverted to a standard class method for `render`. React's component lifecycle guarantees the correct `this` context for render, and this is the canonical syntax which can avoid potential TypeScript inference issues with arrow function properties.
+    // FIX: Changed from an arrow function property to a standard class method. React's component lifecycle guarantees the correct `this` context for `render`, and this canonical syntax avoids potential TypeScript inference issues.
     render(): ReactNode {
         if (this.state.hasError) {
             // Render a fallback UI when an error is caught
