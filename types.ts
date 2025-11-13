@@ -132,3 +132,9 @@ export interface ChatMessage {
     content: any; // Stored as JSONB
     created_at?: string;
 }
+
+export interface ChatSession {
+    session_id: string;
+    title: string | null;
+    last_message_at: string;
+}

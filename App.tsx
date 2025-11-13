@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, Component, ErrorInfo, ReactNode, Suspense } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Zap, X, AlertTriangle } from 'lucide-react';
@@ -12,7 +13,7 @@ import SettingsPage from './pages/SettingsPage';
 import SystemArchitecturePage from './pages/SystemArchitecturePage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import { AiChatPageSkeleton } from './components/skeletons';
+import { LoadingSpinner } from './components/skeletons';
 
 // Lazy load the new AI Chat page
 const AiChatPage = React.lazy(() => import('./pages/AiChatPage'));
@@ -144,7 +145,7 @@ const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ them
                 
                 {/* Main Content */}
                 <main className={`flex-1 pt-20 ${isChatPage ? 'flex flex-col overflow-hidden' : 'overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8'}`}>
-                    <Suspense fallback={<AiChatPageSkeleton />}>
+                    <Suspense fallback={<LoadingSpinner />}>
                         <Routes>
                             <Route path="/" element={<MainDashboard />} />
                             <Route path="/agent" element={<AgentAdminPage />} />

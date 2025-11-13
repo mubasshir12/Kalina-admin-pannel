@@ -1,14 +1,15 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef } from 'react';
 import { PanelLeft } from 'lucide-react';
+import ChatHistoryDropdown from './ai/ChatHistoryDropdown';
 
-interface HeaderProps {
+const Header: React.FC<{
     pageTitle: string;
     onMenuClick: () => void;
     isCollapsed: boolean;
-}
-
-const Header: React.FC<HeaderProps> = ({ pageTitle, onMenuClick, isCollapsed }) => {
+}> = ({ pageTitle, onMenuClick, isCollapsed }) => {
+    const [isChatMenuOpen, setIsChatMenuOpen] = useState(false);
+    const chatButtonRef = useRef<HTMLButtonElement>(null);
+    
     return (
         <header className={`bg-white/80 backdrop-blur-lg px-4 flex items-center gap-4 flex-shrink-0 border-b border-gray-200 fixed top-0 w-full z-20 h-16 transition-all duration-300 ease-in-out ${isCollapsed ? 'md:w-[calc(100%-5rem)] md:left-20' : 'md:w-[calc(100%-11rem)] md:left-44'}`}>
             <button className="md:hidden text-gray-600 hover:text-gray-900" onClick={onMenuClick} aria-label="Open sidebar">
@@ -23,11 +24,11 @@ const Header: React.FC<HeaderProps> = ({ pageTitle, onMenuClick, isCollapsed }) 
 
             <div className="flex-grow" />
 
-            <Link 
-                to="/ai-chat" 
+            <button
+                ref={chatButtonRef}
+                onClick={() => setIsChatMenuOpen(prev => !prev)}
                 className="p-2 rounded-full text-slate-500 hover:bg-slate-200/80 hover:text-slate-800 transition-colors"
-                data-tooltip="AI Assistant"
-                aria-label="Open AI Assistant"
+                aria-label="Open AI Assistant and chat history"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -47,7 +48,12 @@ const Header: React.FC<HeaderProps> = ({ pageTitle, onMenuClick, isCollapsed }) 
                         fill="url(#gem-gradient)"
                     />
                 </svg>
-            </Link>
+            </button>
+            <ChatHistoryDropdown
+                isOpen={isChatMenuOpen}
+                onClose={() => setIsChatMenuOpen(false)}
+                anchorEl={chatButtonRef.current}
+            />
         </header>
     );
 };

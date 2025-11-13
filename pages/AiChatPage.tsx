@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bot, User, CornerDownLeft, Sparkles, ChevronRight, Server, Users, Newspaper, LineChart, Database, KeyRound, PlusCircle, Trash2 } from 'lucide-react';
 import { ConfirmationModal, CopyButton } from '../components/ui';
 import { initializeSession, processUserMessageStream, deleteChatHistory } from '../services/aiChatService';
 import AiChatStyles from '../components/ai/AiChatStyles';
 import ChatInput from '../components/ai/ChatInput';
+import { LoadingSpinner } from '../components/skeletons';
 
 // --- Helper Components ---
 
@@ -211,10 +212,14 @@ const ApiKeyInputView: React.FC<{ onKeySubmit: (key: string) => void }> = ({ onK
 
 // --- The main AI Chat Page component ---
 const AiChatPage: React.FC = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [sessionId, setSessionId] = useState<string | null>(null);
+    const [isInitializing, setIsInitializing] = useState(true);
     const [streamingMessage, setStreamingMessage] = useState<{
         content: string;
         status: 'thinking' | 'tool' | 'generating';
@@ -222,28 +227,46 @@ const AiChatPage: React.FC = () => {
         toolUsed: boolean;
     } | null>(null);
     const [apiKeyReady, setApiKeyReady] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
-     useEffect(() => {
+    useEffect(() => {
         const storedKey = sessionStorage.getItem('user_gemini_api_key');
         if (storedKey) {
             setApiKeyReady(true);
+        } else {
+            setIsInitializing(false);
         }
     }, []);
 
+    // Effect to manage session ID from URL
     useEffect(() => {
-        if (!apiKeyReady) return;
+        const hash = location.hash;
+        let sidFromUrl: string | null = null;
+        if (hash && hash.startsWith('#session=')) {
+            sidFromUrl = hash.substring('#session='.length);
+        }
+        
+        if (sidFromUrl) {
+            setSessionId(sidFromUrl);
+        } else if (apiKeyReady) {
+            // Only create a new session if API key is ready and there's no session in URL
+            const newSid = crypto.randomUUID();
+            navigate(`/ai-chat#session=${newSid}`, { replace: true });
+        }
+    }, [location.hash, navigate, apiKeyReady]);
+
+    // Effect to fetch chat history when session ID changes
+    useEffect(() => {
+        if (!apiKeyReady || !sessionId) return;
 
         const setupSession = async () => {
-            setIsLoading(true);
+            setIsInitializing(true);
             try {
-                const { sessionId: sid, history } = await initializeSession();
-                setSessionId(sid);
+                const { history } = await initializeSession(sessionId);
                 setMessages(history);
             } catch (error) {
                 console.error("AI Chat Initialization Error:", error);
@@ -252,11 +275,11 @@ const AiChatPage: React.FC = () => {
                     parts: [{ text: "Sorry, I couldn't initialize my connection. Please check the console for errors." }]
                 }]);
             } finally {
-                setIsLoading(false);
+                setIsInitializing(false);
             }
         };
         setupSession();
-    }, [apiKeyReady]);
+    }, [sessionId, apiKeyReady]);
 
     useEffect(() => {
         scrollToBottom();
@@ -268,19 +291,22 @@ const AiChatPage: React.FC = () => {
     const handleSaveKey = (key: string) => {
         sessionStorage.setItem('user_gemini_api_key', key);
         setApiKeyReady(true);
+        // This will trigger the useEffect to create a new session via navigation
+        navigate('/ai-chat');
     };
 
     const handleSendMessage = async (prompt: string) => {
         if (!prompt.trim() || isLoading || !sessionId) return;
 
         const userMessage = { role: 'user', parts: [{ text: prompt }] };
-        setMessages(prev => [...prev, userMessage]);
+        const newMessages = [...messages, userMessage];
+        setMessages(newMessages);
         setInput('');
         setIsLoading(true);
         setStreamingMessage({ content: '', status: 'thinking', statusMessage: 'Thinking...', toolUsed: false });
 
         try {
-            const stream = processUserMessageStream(prompt, sessionId);
+            const stream = processUserMessageStream(prompt, sessionId, newMessages);
             let finalMessage = { content: '', toolUsed: false };
 
             for await (const chunk of stream) {
@@ -306,6 +332,8 @@ const AiChatPage: React.FC = () => {
                 sessionStorage.removeItem('user_gemini_api_key');
                 setApiKeyReady(false);
                 setMessages([]);
+                setSessionId(null);
+                navigate('/ai-chat', { replace: true });
                 alert("Your API key appears to be invalid. Please enter a valid key to continue.");
                 return;
             }
@@ -316,55 +344,20 @@ const AiChatPage: React.FC = () => {
             setStreamingMessage(null);
         }
     };
-    
-    const handleNewChat = async () => {
-        sessionStorage.removeItem('ai_chat_session_id');
-        setIsLoading(true);
-        try {
-            const { sessionId: sid, history } = await initializeSession();
-            setSessionId(sid);
-            setMessages(history);
-        } catch (error) {
-             console.error("AI Chat Initialization Error:", error);
-                setMessages([{
-                    role: 'model',
-                    parts: [{ text: "Sorry, I couldn't initialize a new session." }]
-                }]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
-    const handleDeleteChat = () => {
-        if (!sessionId || messages.length <= 1) return;
-        setIsDeleteModalOpen(true);
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!sessionId) return;
-        setIsDeleteModalOpen(false);
-        setIsLoading(true);
-        try {
-            const { error } = await deleteChatHistory(sessionId);
-            if (error) throw error;
-            await handleNewChat();
-        } catch (error) {
-            console.error("Failed to delete chat history:", error);
-            alert("Could not delete the chat history. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
     const renderedMessages = useMemo(() => 
-        messages.slice(1).map((msg, index) => <ChatBubble key={index} message={msg} />)
-    , [messages]);
+        messages.map((msg, index) => <ChatBubble key={`${sessionId}-${index}`} message={msg} />)
+    , [messages, sessionId]);
     
     const sidebarPrompts = [
         { icon: <LineChart size={16}/>, text: "Show advanced analytics summary" },
         { icon: <Users size={16} />, text: "What's the user retention rate?" },
         { icon: <Newspaper size={16} />, text: "Which news category is most popular?" },
     ];
+
+    if (isInitializing) {
+        return <LoadingSpinner />;
+    }
 
     return (
         <div className="ai-chat-container flex-1 min-h-0">
@@ -373,7 +366,7 @@ const AiChatPage: React.FC = () => {
                 <div className="chat-messages-container hide-scrollbar">
                     {!apiKeyReady ? (
                         <ApiKeyInputView onKeySubmit={handleSaveKey} />
-                    ) : messages.length < 2 && !streamingMessage ? (
+                    ) : messages.length === 0 && !streamingMessage ? (
                         <WelcomeView onPromptClick={(p) => handleSendMessage(p)} />
                     ) : (
                         <div className="space-y-6">
@@ -403,20 +396,7 @@ const AiChatPage: React.FC = () => {
                 )}
             </main>
             <aside className="chat-sidebar p-6 space-y-6">
-                 <div className="flex items-center gap-2">
-                    <button onClick={handleNewChat} className="btn btn-primary w-full !justify-start">
-                        <PlusCircle size={16} /> New Chat
-                    </button>
-                    <button 
-                        onClick={handleDeleteChat} 
-                        className="btn btn-secondary !p-2.5"
-                        disabled={isLoading || !sessionId || messages.length <= 1}
-                        data-tooltip="Delete Chat"
-                    >
-                        <Trash2 size={16} />
-                    </button>
-                </div>
-                <div>
+                 <div>
                     <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Suggestions</h3>
                     <div className="space-y-2">
                         {sidebarPrompts.map((p, i) => (
@@ -431,6 +411,8 @@ const AiChatPage: React.FC = () => {
                             sessionStorage.removeItem('user_gemini_api_key');
                             setApiKeyReady(false);
                             setMessages([]);
+                            setSessionId(null);
+                            navigate('/ai-chat', { replace: true });
                         }} 
                         className="suggestion-card w-full text-left"
                     >
@@ -441,15 +423,6 @@ const AiChatPage: React.FC = () => {
                     </button>
                 </div>
             </aside>
-             <ConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleConfirmDelete}
-                title="Delete Chat History"
-                message="Are you sure you want to permanently delete this entire conversation? This action cannot be undone."
-                confirmText="Delete"
-                confirmButtonClass="btn-danger"
-            />
         </div>
     );
 };

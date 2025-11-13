@@ -1,6 +1,5 @@
 import { GoogleGenAI, FunctionDeclaration, Type, GenerateContentResponse } from '@google/genai';
 import { createClient } from '@supabase/supabase-js';
-import type { ChatMessage } from '../types';
 import { 
     fetchMainDashboardData, 
     fetchUsersData, 
@@ -20,21 +19,20 @@ const dbMain = createClient(MAIN_SUPABASE_URL, MAIN_SUPABASE_SERVICE_KEY);
 
 // --- Chat History Management ---
 
-async function saveChatMessage(message: ChatMessage) {
+async function saveChatMessage(sessionId: string, role: 'user' | 'model', content: any) {
     return await dbMain.from('ai_chat_history').insert({
-        session_id: message.session_id,
-        role: message.role,
-        content: message.content, // content is already the JSONB object
+        session_id: sessionId,
+        role: role,
+        content: content,
     });
 }
 
-async function getChatHistory(sessionId: string) {
+export async function getChatHistory(sessionId: string) {
     const { data, error } = await dbMain
         .from('ai_chat_history')
         .select('role, content')
         .eq('session_id', sessionId)
-        .order('created_at', { ascending: true })
-        .limit(20); // Get last 20 messages for context
+        .order('created_at', { ascending: true });
 
     if (error) {
         console.error("Error fetching chat history:", error);
@@ -48,6 +46,16 @@ async function getChatHistory(sessionId: string) {
     }));
 }
 
+export async function getChatSessions() {
+    // This RPC function needs to be created in Supabase SQL editor.
+    const { data, error } = await dbMain.rpc('get_chat_sessions');
+    if (error) {
+        console.error("Error fetching chat sessions:", error);
+        return [];
+    }
+    return data as { session_id: string; title: string | null; last_message_at: string }[];
+}
+
 export async function deleteChatHistory(sessionId: string) {
     return await dbMain
         .from('ai_chat_history')
@@ -58,28 +66,18 @@ export async function deleteChatHistory(sessionId: string) {
 
 // --- Session and Initialization ---
 
-export async function initializeSession() {
-    let sessionId = sessionStorage.getItem('ai_chat_session_id');
+export async function initializeSession(sessionId: string) {
+    const dbHistory = await getChatHistory(sessionId);
     let history: any[] = [];
-
-    if (!sessionId) {
-        sessionId = crypto.randomUUID();
-        sessionStorage.setItem('ai_chat_session_id', sessionId);
+    
+    if (dbHistory.length > 0) {
+        history = dbHistory;
+    } else {
+        // If there's a session ID but no history, still provide a welcome message.
         history = [{
             role: 'model',
             parts: [{ text: "Hi! I'm the Kalina AI assistant. I can fetch live data and analytics from the dashboard for you. What would you like to know?" }]
         }];
-    } else {
-        const dbHistory = await getChatHistory(sessionId);
-        if (dbHistory.length > 0) {
-            history = dbHistory;
-        } else {
-            // If there's a session ID but no history, still provide a welcome message.
-            history = [{
-                role: 'model',
-                parts: [{ text: "Welcome back! How can I help you with the dashboard analytics today?" }]
-            }];
-        }
     }
     return { sessionId, history };
 }
@@ -137,7 +135,7 @@ const handleGetAnalyticsData = async (section: string) => {
 
 // --- Core Chat Processing Logic (Streaming) ---
 
-export async function* processUserMessageStream(userInput: string, sessionId: string) {
+export async function* processUserMessageStream(userInput: string, sessionId: string, history: any[]) {
     const apiKey = sessionStorage.getItem('user_gemini_api_key');
     if (!apiKey) {
         const errorMsg = "Sorry, I can't function right now. No Gemini API key has been provided in this session. Please set your key to continue.";
@@ -150,9 +148,7 @@ export async function* processUserMessageStream(userInput: string, sessionId: st
     yield { type: 'thinking' };
 
     const userMessage = { role: 'user', parts: [{ text: userInput }] };
-    await saveChatMessage({ session_id: sessionId, role: 'user', content: { parts: userMessage.parts } });
-    
-    const history = await getChatHistory(sessionId);
+    await saveChatMessage(sessionId, 'user', { parts: userMessage.parts });
     
     // --- Agent 1: Router Agent Call ---
     let routerResponse: GenerateContentResponse;
@@ -250,7 +246,7 @@ The Kalina AI Admin Panel is a tool for monitoring and managing the entire Kalin
     *   **LTM Categories**: A bar chart of the most common categories for LTM facts (e.g., 'personal_preference', 'reminder').
     *   **Top Languages**: A bar chart showing the most frequently saved programming languages in code snippets.
     *   **Feature Usage**: Stats on how many users have enabled Proactive Mode or are using their own personal API keys.
-*   **AI Assistant (\`/ai-chat\`)**: The chat interface you are currently using to help the admin.
+*   **AI Assistant (\`/ai-chat\`)**: The chat interface you are currently using to help the admin. You can access previous conversations and start new ones from the chat icon in the main header.
 *   **Space (\`/architecture\`)**: A visual diagram showing the entire system architecture, including frontends, Supabase Edge Functions, external APIs (Groq, GNews, Gemini), and the different databases. It illustrates how data flows through the system.
 *   **Agent Panel (\`/agent\`)**: Manages the AI agents that respond to users in the main client app.
     *   **Analytics (\`#analytics\`)**: Shows charts for agent requests over time, average response latency, error rates, and which agents are used most.
@@ -318,10 +314,6 @@ Now, answer the user's question based on the live data provided by the tool (if 
 
     // After streaming is complete, save the final message to the database
     if (fullResponseText) {
-        await saveChatMessage({ 
-            session_id: sessionId, 
-            role: 'model', 
-            content: { parts: [{ text: fullResponseText }] }
-        });
+        await saveChatMessage(sessionId, 'model', { parts: [{ text: fullResponseText }] });
     }
 }
