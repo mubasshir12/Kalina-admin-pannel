@@ -254,7 +254,8 @@ const AgentAdminPage: React.FC = () => {
             case 'settings':
                 return <AgentSettings config={config} onUpdate={loadData} />;
             default:
-                return null;
+                // This case should not be hit due to the useEffect logic, but as a safeguard:
+                return <AgentAnalytics logs={filteredLogsByDate} analyticsData={analyticsData} onDateChange={setDateRange} />;
         }
     };
 

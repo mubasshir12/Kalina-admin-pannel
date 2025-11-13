@@ -3,6 +3,7 @@
 
 
 
+
 export interface AgentLog {
   id: number;
   created_at: string;
@@ -123,4 +124,11 @@ export interface TableDetails {
     rowCount: number;
     columns: string[];
     recentRows: any[];
+}
+export interface ChatMessage {
+    id?: number;
+    session_id: string;
+    role: 'user' | 'model';
+    content: any; // Stored as JSONB
+    created_at?: string;
 }

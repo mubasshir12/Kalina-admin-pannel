@@ -212,7 +212,8 @@ const NewsAdminPage: React.FC = () => {
             case 'settings':
                 return <NewsSettings currentConfig={config} onUpdate={loadData} />;
             default:
-                return null;
+                // Safeguard to render the default view instead of null
+                return <NewsEngagement engagementData={engagementData} onRefresh={loadData} />;
         }
     };
 

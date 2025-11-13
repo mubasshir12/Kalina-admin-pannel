@@ -1,11 +1,6 @@
-
-
-
-
-
 import { createClient } from '@supabase/supabase-js';
 // FIX: Import AdvancedAnalyticsData type
-import type { AgentConfig, NewsConfig, MainDashboardData, UserStats, ArticleEngagementData, AdvancedAnalyticsData, BarDataPoint, TrendDataPoint } from '../types';
+import type { AgentLog, NewsLog, AgentConfig, NewsConfig, MainDashboardData, UserStats, ArticleEngagementData, AdvancedAnalyticsData, BarDataPoint, TrendDataPoint, ChatMessage } from '../types';
 
 // Client for the Agent Handler function (separate project)
 const AGENT_SUPABASE_URL = process.env.VITE_AGENT_SUPABASE_URL || 'https://txlogzxtdltxcmkhcqsi.supabase.co';
@@ -15,7 +10,7 @@ const dbAgent = createClient(AGENT_SUPABASE_URL, AGENT_SUPABASE_SERVICE_KEY);
 // Client for the Main App functions (Update News, etc.)
 const MAIN_SUPABASE_URL = process.env.VITE_MAIN_SUPABASE_URL || 'https://rrpwqxhwwcgcagzkfoip.supabase.co';
 const MAIN_SUPABASE_SERVICE_KEY = process.env.VITE_MAIN_SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJycHdxeGh3d2NnY2Fnemtmb2lwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDIzNDE3NiwiZXhwIjoyMDc1ODEwMTc2fQ.RDHlMAYngd7I_UAzjdr7p0QDy9SgJrga5m_qOZYoGU4';
-const dbMain = createClient(MAIN_SUPABASE_URL, MAIN_SUPABASE_SERVICE_KEY);
+export const dbMain = createClient(MAIN_SUPABASE_URL, MAIN_SUPABASE_SERVICE_KEY);
 
 
 // === Main Dashboard Data Fetching ===
@@ -370,5 +365,50 @@ export async function fetchAdvancedAnalyticsData(): Promise<AdvancedAnalyticsDat
         summarizationFailureCount: summarizationFailRes.count ?? 0,
         articleCacheCount: cacheCountRes.count ?? 0,
         totalConversations: totalConvos,
+    };
+}
+
+
+// === AI Chat Tools (Analytics) ===
+
+export async function fetchAndCalculateAgentAnalytics() {
+    const { data: logs, error } = await dbAgent.from('groq_agent_logs').select('*');
+    if (error) throw error;
+    if (!logs) return {};
+
+    const totalRequests = logs.length;
+    const successfulRequests = logs.filter(log => log.status === 'success').length;
+    const errorRate = totalRequests > 0 ? ((totalRequests - successfulRequests) / totalRequests * 100) : 0;
+    const successfulLogs = logs.filter(log => log.status === 'success' && log.latency_ms);
+    const avgLatency = successfulLogs.length > 0 ? (successfulLogs.reduce((acc, log) => acc + log.latency_ms, 0) / successfulLogs.length) : 0;
+    
+    return {
+        totalRequests,
+        successfulRequests,
+        errorRate: parseFloat(errorRate.toFixed(1)),
+        avgLatency: parseInt(avgLatency.toFixed(0)),
+    };
+}
+
+export async function fetchAndCalculateNewsAnalytics() {
+    const { data: logs, error } = await dbMain.from('update_news_logs').select('*');
+    if (error) throw error;
+    if (!logs) return {};
+    
+    const totalRuns = logs.length;
+    const successfulRuns = logs.filter(l => l.status === 'SUCCESS').length;
+    const successRate = totalRuns > 0 ? ((successfulRuns / totalRuns) * 100) : 100;
+    const avgDuration = totalRuns > 0 ? (logs.reduce((acc, l) => acc + l.duration_ms, 0) / totalRuns) : 0;
+    const articlesUpdated = logs.reduce((acc, l) => {
+        const summaryLine = l.summary?.find(s => s.includes('Total Articles Updated'));
+        return acc + (parseInt(summaryLine?.split(': ')[1] || '0', 10));
+    }, 0);
+
+    return {
+        totalRuns,
+        successfulRuns,
+        successRate: parseFloat(successRate.toFixed(1)),
+        avgDurationSeconds: parseFloat((avgDuration / 1000).toFixed(2)),
+        totalArticlesUpdated: articlesUpdated,
     };
 }

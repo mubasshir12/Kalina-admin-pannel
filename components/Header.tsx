@@ -1,5 +1,6 @@
 import React from 'react';
-import { PanelLeft, ChevronsLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { PanelLeft } from 'lucide-react';
 
 interface HeaderProps {
     pageTitle: string;
@@ -19,6 +20,34 @@ const Header: React.FC<HeaderProps> = ({ pageTitle, onMenuClick, isCollapsed }) 
                 <span className="text-slate-300 font-light">|</span>
                 <span className="text-slate-700 font-semibold text-base">{pageTitle}</span>
             </div>
+
+            <div className="flex-grow" />
+
+            <Link 
+                to="/ai-chat" 
+                className="p-2 rounded-full text-slate-500 hover:bg-slate-200/80 hover:text-slate-800 transition-colors"
+                data-tooltip="AI Assistant"
+                aria-label="Open AI Assistant"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <defs>
+                        <linearGradient id="gem-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style={{ stopColor: '#a855f7' }} />
+                            <stop offset="100%" style={{ stopColor: '#3b82f6' }} />
+                        </linearGradient>
+                    </defs>
+                    <path
+                        d="M12 0 Q12 12 24 12 Q12 12 12 24 Q12 12 0 12 Q12 12 12 0Z"
+                        fill="url(#gem-gradient)"
+                    />
+                </svg>
+            </Link>
         </header>
     );
 };

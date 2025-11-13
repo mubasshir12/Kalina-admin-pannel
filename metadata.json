@@ -1,5 +1,5 @@
 {
-  "name": "Kalina AI Admin Dashboard",
+  "name": "New Version of admin oannel",
   "description": "An admin dashboard to monitor and manage Kalina AI services, including agents and News Updater functions. It provides analytics, logs, and configuration settings in a modern React single-page application.",
   "requestFramePermissions": []
 }

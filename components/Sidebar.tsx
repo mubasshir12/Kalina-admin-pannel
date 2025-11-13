@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Settings, LineChart, History, Users, TrendingUp, ChevronsLeft, Network } from 'lucide-react';
+import { Home, Settings, LineChart, History, Users, TrendingUp, ChevronsLeft, Network, Bot } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
 interface SidebarProps {
@@ -64,6 +64,11 @@ const Sidebar: React.FC<SidebarProps> = ({ closeSidebar, isCollapsed, className,
                  <NavLink to="/advanced-analytics" className={() => getNavLinkClass('/advanced-analytics')} onClick={closeSidebar}>
                     <TrendingUp size={18} className="shrink-0 w-5 text-center" />
                     <span className={isCollapsed ? 'md:hidden' : ''}>Insights</span>
+                </NavLink>
+
+                <NavLink to="/ai-chat" className={() => getNavLinkClass('/ai-chat')} onClick={closeSidebar}>
+                    <Bot size={18} className="shrink-0 w-5 text-center" />
+                    <span className={isCollapsed ? 'md:hidden' : ''}>AI Assistant</span>
                 </NavLink>
 
                 <NavLink to="/architecture" className={() => getNavLinkClass('/architecture')} onClick={closeSidebar}>

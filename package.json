@@ -1,5 +1,5 @@
 {
-  "name": "kalina-ai-admin-dashboard",
+  "name": "new-version-of-admin-oannel",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -14,7 +14,8 @@
     "react": "^19.2.0",
     "@supabase/supabase-js": "^2.80.0",
     "chart.js": "^4.5.1",
-    "lucide-react": "^0.417.0"
+    "lucide-react": "^0.417.0",
+    "@google/genai": "^1.29.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

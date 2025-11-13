@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode, Suspense } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Zap, X, AlertTriangle } from 'lucide-react';
 
@@ -8,9 +8,14 @@ import NewsAdminPage from './pages/NewsAdminPage';
 import UsersPage from './pages/UsersPage';
 import AdvancedAnalyticsPage from './pages/AdvancedAnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
-import SystemArchitecturePage from './pages/SystemArchitecturePage'; // New Page Import
+import SystemArchitecturePage from './pages/SystemArchitecturePage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import { AiChatPageSkeleton } from './components/skeletons';
+
+// Lazy load the new AI Chat page
+const AiChatPage = React.lazy(() => import('./pages/AiChatPage'));
+
 
 // --- Error Boundary Component ---
 interface ErrorBoundaryProps {
@@ -36,8 +41,8 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         console.error("Kalina AI - Uncaught Application Error:", error, errorInfo);
     }
 
-    // FIX: Converted the render method to an arrow function to ensure `this` is always correctly bound to the component instance, preventing errors where `this.props` might be undefined.
-    render = (): ReactNode => {
+    // FIX: Reverted to a standard class method for `render`. React's component lifecycle guarantees the correct `this` context for render, and this is the canonical syntax which can avoid potential TypeScript inference issues with arrow function properties.
+    render(): ReactNode {
         if (this.state.hasError) {
             // Render a fallback UI when an error is caught
             return (
@@ -69,6 +74,7 @@ const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ them
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
     const [pageTitle, setPageTitle] = useState('Overview');
+    const isChatPage = location.pathname === '/ai-chat';
 
     useEffect(() => {
         switch (location.pathname) {
@@ -89,6 +95,9 @@ const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ them
                 break;
             case '/architecture':
                 setPageTitle('Space');
+                break;
+            case '/ai-chat':
+                setPageTitle('AI Assistant');
                 break;
             case '/':
             default:
@@ -133,16 +142,19 @@ const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ them
                 />
                 
                 {/* Main Content */}
-                <main className="flex-1 overflow-y-auto pt-20 px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
-                    <Routes>
-                        <Route path="/" element={<MainDashboard />} />
-                        <Route path="/agent" element={<AgentAdminPage />} />
-                        <Route path="/news" element={<NewsAdminPage />} />
-                        <Route path="/users" element={<UsersPage />} />
-                        <Route path="/advanced-analytics" element={<AdvancedAnalyticsPage />} />
-                        <Route path="/settings" element={<SettingsPage />} />
-                        <Route path="/architecture" element={<SystemArchitecturePage />} /> {/* New Route */}
-                    </Routes>
+                <main className={`flex-1 pt-20 ${isChatPage ? 'flex flex-col overflow-hidden' : 'overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8'}`}>
+                    <Suspense fallback={<AiChatPageSkeleton />}>
+                        <Routes>
+                            <Route path="/" element={<MainDashboard />} />
+                            <Route path="/agent" element={<AgentAdminPage />} />
+                            <Route path="/news" element={<NewsAdminPage />} />
+                            <Route path="/users" element={<UsersPage />} />
+                            <Route path="/advanced-analytics" element={<AdvancedAnalyticsPage />} />
+                            <Route path="/settings" element={<SettingsPage />} />
+                            <Route path="/architecture" element={<SystemArchitecturePage />} />
+                            <Route path="/ai-chat" element={<AiChatPage />} />
+                        </Routes>
+                    </Suspense>
                 </main>
             </div>
         </div>

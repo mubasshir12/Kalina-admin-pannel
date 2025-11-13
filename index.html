@@ -59,6 +59,18 @@
         --icon-fg-blue: #2563eb;
         --icon-bg-purple: #ede9fe;
         --icon-fg-purple: #7c3aed;
+        
+        /* NEW: AI Chat Variables */
+        --chat-bg: #f9fafb;
+        --chat-sidebar-bg: #ffffff;
+        --chat-input-bg: #ffffff;
+        --chat-user-bubble-bg: #4f46e5;
+        --chat-user-bubble-text: #ffffff;
+        --chat-model-bubble-bg: #ffffff;
+        --chat-model-bubble-text: #1f2937;
+        --chat-suggestion-bg: #f3f4f6;
+        --chat-suggestion-hover-bg: #e5e7eb;
+        --chat-suggestion-text: #4b5563;
     }
 
     html.dark {
@@ -105,6 +117,18 @@
         --icon-fg-blue: #93c5fd;
         --icon-bg-purple: rgba(168, 85, 247, 0.2);
         --icon-fg-purple: #c4b5fd;
+        
+        /* NEW: AI Chat Dark Mode Variables */
+        --chat-bg: #1f2937;
+        --chat-sidebar-bg: #1f2937;
+        --chat-input-bg: #27272A;
+        --chat-user-bubble-bg: #4f46e5;
+        --chat-user-bubble-text: #ffffff;
+        --chat-model-bubble-bg: #27272A;
+        --chat-model-bubble-text: #f4f4f5;
+        --chat-suggestion-bg: #3f3f46;
+        --chat-suggestion-hover-bg: #52525b;
+        --chat-suggestion-text: #d4d4d8;
     }
     
     /* --- FIX: Dark Mode Border, Background, and Accent Overrides --- */
@@ -698,13 +722,43 @@
     "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.80.0",
     "chart.js": "https://aistudiocdn.com/chart.js@^4.5.1",
     "lucide-react": "https://aistudiocdn.com/lucide-react@^0.417.0",
-    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0"
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0"
   }
 }
 </script>
 </head>
 <body class="h-dvh">
-    <div id="root" class="h-full"></div>
+    <div id="root" class="h-full">
+        <!-- Initial App Loader -->
+        <style>
+            #app-loader {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                gap: 1rem;
+                background-color: var(--body-bg);
+                transition: opacity 0.5s ease-out;
+            }
+            #app-loader .loader-text {
+                font-family: 'Inter', sans-serif;
+                font-size: 0.875rem;
+                font-weight: 500;
+                color: var(--text-secondary);
+                animation: pulse 1.5s ease-in-out infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 0.6; }
+                50% { opacity: 1; }
+            }
+        </style>
+        <div id="app-loader">
+            <div class="loader"></div>
+            <p class="loader-text">Initializing Kalina AI Dashboard...</p>
+        </div>
+    </div>
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>
