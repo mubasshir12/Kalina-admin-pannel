@@ -188,14 +188,14 @@ const ChatHistoryDropdown: React.FC<{
                 <div className="p-2 border-t border-[var(--border-color)] bg-slate-50/50 dark:bg-zinc-900/50 flex items-center justify-end gap-2">
                     <button
                         onClick={handleManageKeys}
-                        className="btn btn-secondary !py-2 text-xs whitespace-nowrap"
+                        className="btn btn-secondary !py-2 !px-3 text-xs whitespace-nowrap"
                     >
                         <Settings size={16} /> Manage Keys
                     </button>
                     <Link
                         to="/ai-chat"
                         onClick={onClose}
-                        className="btn btn-primary !py-2 text-xs whitespace-nowrap"
+                        className="btn btn-primary !py-2 !px-3 text-xs whitespace-nowrap"
                     >
                         <PlusCircle size={16} /> New Chat
                     </Link>
