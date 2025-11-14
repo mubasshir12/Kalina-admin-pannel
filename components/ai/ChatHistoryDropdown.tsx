@@ -1,9 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { PlusCircle, Trash2, MessageSquare, Loader2 } from 'lucide-react';
+import { PlusCircle, Trash2, MessageSquare, Loader2, KeyRound, Settings } from 'lucide-react';
 import { getChatSessions, deleteChatHistory } from '../../services/aiChatService';
 import { timeAgo } from '../ui';
 import type { ChatSession } from '../../types';
+
+// Helper to check dates
+const isToday = (someDate: Date) => {
+    const today = new Date();
+    return someDate.getDate() === today.getDate() &&
+        someDate.getMonth() === today.getMonth() &&
+        someDate.getFullYear() === today.getFullYear();
+};
+
+const isYesterday = (someDate: Date) => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return someDate.getDate() === yesterday.getDate() &&
+        someDate.getMonth() === yesterday.getMonth() &&
+        someDate.getFullYear() === yesterday.getFullYear();
+};
+
 
 const ChatHistoryDropdown: React.FC<{
     isOpen: boolean;
@@ -48,14 +65,35 @@ const ChatHistoryDropdown: React.FC<{
         const currentSessionId = location.hash.substring('#session='.length);
         await deleteChatHistory(sessionIdToDelete);
         
-        // After deleting, refetch sessions to update the list
+        // Refetch sessions after deletion
         fetchAndSetSessions();
         
-        // If the currently active chat was deleted, navigate to a new chat
+        // If the deleted chat was the active one, navigate to a new chat
         if (currentSessionId === sessionIdToDelete) {
             navigate('/ai-chat');
         }
     };
+
+    const handleManageKeys = () => {
+        navigate('/settings');
+        onClose();
+    };
+
+    // Grouping logic
+    const { today, yesterday, older } = React.useMemo(() => {
+        const groups: { today: ChatSession[], yesterday: ChatSession[], older: ChatSession[] } = { today: [], yesterday: [], older: [] };
+        sessions.forEach(session => {
+            const sessionDate = new Date(session.last_message_at);
+            if (isToday(sessionDate)) {
+                groups.today.push(session);
+            } else if (isYesterday(sessionDate)) {
+                groups.yesterday.push(session);
+            } else {
+                groups.older.push(session);
+            }
+        });
+        return groups;
+    }, [sessions]);
     
     if (!isOpen || !anchorEl) return null;
 
@@ -66,23 +104,66 @@ const ChatHistoryDropdown: React.FC<{
         right: `${window.innerWidth - rect.right - window.scrollX}px`,
     };
 
+    // FIX: Explicitly typing as React.FC helps TypeScript correctly infer that this is a component that can accept a `key` prop.
+    const ChatSessionItem: React.FC<{ session: ChatSession }> = ({ session }) => {
+        const isActive = location.hash.includes(session.session_id);
+        return (
+            <li className="relative group">
+                 <Link
+                    to={`/ai-chat#session=${session.session_id}`}
+                    onClick={onClose}
+                    className={`flex items-center gap-3 px-4 py-2 w-full transition-colors ${
+                        isActive
+                            ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold'
+                            : 'hover:bg-[var(--sidebar-link-hover-bg)]'
+                    }`}
+                >
+                    <MessageSquare size={16} className="shrink-0" />
+                    <div className="flex-grow min-w-0">
+                        <p className="truncate text-sm">{session.title || 'New Chat'}</p>
+                        <p className={`text-xs ${isActive ? '' : 'text-[var(--text-secondary)]'}`}>{timeAgo(session.last_message_at)}</p>
+                    </div>
+                </Link>
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); handleDelete(session.session_id); }}
+                        className="p-2 rounded-full text-[var(--danger)] dark:text-red-400 hover:bg-[var(--status-danger-subtle-bg)] transition-colors"
+                        aria-label={`Delete chat: ${session.title || 'New Chat'}`}
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                </div>
+            </li>
+        );
+    };
+
+    const ChatGroup = ({ title, sessions }: { title: string, sessions: ChatSession[] }) => {
+        if (sessions.length === 0) return null;
+        return (
+            <div>
+                <h4 className="text-xs font-bold text-[var(--sidebar-text-muted)] uppercase tracking-wider px-4 pt-3 pb-1">{title}</h4>
+                <ul className="space-y-0.5">
+                    {sessions.map(session => <ChatSessionItem key={session.session_id} session={session} />)}
+                </ul>
+            </div>
+        );
+    };
+
     return (
         <div 
             ref={dropdownRef} 
             style={style} 
-            className="fixed z-50 w-full max-w-sm animate-fade-in-up"
+            className="fixed z-50 w-[70vw] md:w-[30vw] max-w-md animate-fade-in-up"
         >
-            <div className="bg-[var(--card-bg)] rounded-xl shadow-2xl border border-[var(--border-color)] overflow-hidden">
-                <div className="p-2 border-b border-[var(--border-color)]">
-                    <Link
-                        to="/ai-chat"
-                        onClick={onClose}
-                        className="flex items-center gap-2 font-semibold text-[var(--accent-color)] dark:text-[var(--accent-text)] w-full text-left p-2 rounded-lg transition-colors hover:bg-[var(--sidebar-link-hover-bg)]"
-                    >
-                        <PlusCircle size={18} /> New Chat Session
-                    </Link>
+            <div className="bg-[var(--card-bg)] rounded-xl shadow-2xl border border-[var(--border-color)] flex flex-col">
+                {/* Header */}
+                <div className="p-4 border-b border-[var(--border-color)]">
+                    <h3 className="font-bold text-lg text-[var(--text-primary)]">AI Assistant</h3>
+                    <p className="text-sm text-[var(--text-secondary)] mt-1 truncate">Review past conversations or start a new one.</p>
                 </div>
-                <div className="max-h-96 overflow-y-auto p-2 hide-scrollbar">
+                
+                {/* Main Content */}
+                <div className="flex-grow max-h-80 overflow-y-auto hide-scrollbar">
                     {loading ? (
                         <div className="flex items-center justify-center gap-2 text-sm text-[var(--text-secondary)] py-4">
                             <Loader2 size={16} className="animate-spin" />
@@ -95,34 +176,29 @@ const ChatHistoryDropdown: React.FC<{
                             <p className="text-xs opacity-80">Start a new conversation to see it here.</p>
                          </div>
                     ) : (
-                        <ul className="space-y-1">
-                            {sessions.map(session => (
-                                <li 
-                                    key={session.session_id}
-                                    className="relative flex justify-between items-center group rounded-lg transition-colors hover:bg-[var(--sidebar-link-hover-bg)]"
-                                >
-                                    <Link
-                                        to={`/ai-chat#session=${session.session_id}`}
-                                        onClick={onClose}
-                                        className="flex-grow p-2"
-                                    >
-                                        <p className="truncate font-medium text-sm text-[var(--text-primary)]">{session.title || 'New Chat'}</p>
-                                        <p className="text-xs text-[var(--text-secondary)]">{timeAgo(session.last_message_at)}</p>
-                                    </Link>
-                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); handleDelete(session.session_id); }}
-                                            className="p-2 rounded-full text-[var(--danger)] dark:text-red-400 hover:bg-[var(--status-danger-subtle-bg)] transition-colors"
-                                            aria-label={`Delete chat: ${session.title || 'New Chat'}`}
-                                            data-tooltip="Delete"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                        <div>
+                           <ChatGroup title="Today" sessions={today} />
+                           <ChatGroup title="Yesterday" sessions={yesterday} />
+                           <ChatGroup title="Older" sessions={older} />
+                        </div>
                     )}
+                </div>
+
+                 {/* Footer */}
+                <div className="p-2 border-t border-[var(--border-color)] bg-slate-50/50 dark:bg-zinc-900/50 flex items-center justify-end gap-2">
+                    <button
+                        onClick={handleManageKeys}
+                        className="btn btn-secondary !py-2 text-sm whitespace-nowrap"
+                    >
+                        <Settings size={16} /> Manage Keys
+                    </button>
+                    <Link
+                        to="/ai-chat"
+                        onClick={onClose}
+                        className="btn btn-primary !py-2 text-sm whitespace-nowrap"
+                    >
+                        <PlusCircle size={16} /> New Chat
+                    </Link>
                 </div>
             </div>
         </div>

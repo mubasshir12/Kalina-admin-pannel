@@ -1,6 +1,6 @@
 import { GoogleGenAI, FunctionDeclaration, Type, GenerateContentResponse } from '@google/genai';
-import { createClient } from '@supabase/supabase-js';
 import { 
+    dbMain,
     fetchMainDashboardData, 
     fetchUsersData, 
     fetchNewsEngagementData,
@@ -10,11 +10,49 @@ import {
 } from './supabaseService';
 
 
-// --- Supabase Client for Main App DB (Chat History) ---
-// This service is self-contained and manages its own DB connection for chat.
-const MAIN_SUPABASE_URL = process.env.VITE_MAIN_SUPABASE_URL || 'https://rrpwqxhwwcgcagzkfoip.supabase.co';
-const MAIN_SUPABASE_SERVICE_KEY = process.env.VITE_MAIN_SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJycHdxeGh3d2NnY2Fnemtmb2lwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDIzNDE3NiwiZXhwIjoyMDc1ODEwMTc2fQ.RDHlMAYngd7I_UAzjdr7p0QDy9SgJrga5m_qOZYoGU4';
-const dbMain = createClient(MAIN_SUPABASE_URL, MAIN_SUPABASE_SERVICE_KEY);
+// --- API Key Management (NEW) ---
+
+export async function getApiKeys() {
+    const { data, error } = await dbMain.from('ai_api_keys').select('*').order('created_at');
+    if (error) throw error;
+    return data;
+}
+
+export async function addApiKey(apiKey: string) {
+    const { error } = await dbMain.from('ai_api_keys').insert({ api_key: apiKey, status: 'active' });
+    if (error) throw error;
+}
+
+export async function deleteApiKey(id: number) {
+    const { error } = await dbMain.from('ai_api_keys').delete().eq('id', id);
+    if (error) throw error;
+}
+
+export async function resetApiKeysStatus() {
+    const { error } = await dbMain.from('ai_api_keys').update({ status: 'active', failure_count: 0 }).eq('status', 'exhausted');
+    if (error) throw error;
+}
+
+// Fetches the next available API key using the RPC function
+async function getNextApiKey(): Promise<{ keyId: number; keyValue: string } | null> {
+    const { data, error } = await dbMain.rpc('get_next_api_key');
+    if (error) {
+        console.error("Error fetching next API key:", error);
+        return null;
+    }
+    if (data && data.length > 0) {
+        return { keyId: data[0].key_id, keyValue: data[0].key_value };
+    }
+    return null;
+}
+
+// Marks an API key as exhausted using the RPC function
+async function markKeyAsExhausted(keyId: number) {
+    const { error } = await dbMain.rpc('mark_api_key_exhausted', { p_key_id: keyId });
+    if (error) {
+        console.error(`Error marking key ID ${keyId} as exhausted:`, error);
+    }
+}
 
 
 // --- Chat History Management ---
@@ -135,30 +173,37 @@ const handleGetAnalyticsData = async (section: string) => {
 
 // --- Core Chat Processing Logic (Streaming) ---
 
+const MAX_RETRIES = 5; // Max number of keys to try before giving up
+
 export async function* processUserMessageStream(userInput: string, sessionId: string, history: any[]) {
-    const apiKey = sessionStorage.getItem('user_gemini_api_key');
-    if (!apiKey) {
-        const errorMsg = "Sorry, I can't function right now. No Gemini API key has been provided in this session. Please set your key to continue.";
-        yield { type: 'content', text: errorMsg };
-        return;
-    }
-    
-    const ai = new GoogleGenAI({ apiKey });
     
     yield { type: 'thinking' };
 
     const userMessage = { role: 'user', parts: [{ text: userInput }] };
     await saveChatMessage(sessionId, 'user', { parts: userMessage.parts });
     
-    // --- Agent 1: Router Agent Call ---
-    let routerResponse: GenerateContentResponse;
-    try {
-        routerResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [...history, userMessage],
-            config: { 
-                tools: [{ functionDeclarations: [getAnalyticsDataTool] }],
-                systemInstruction: `You are a specialized AI assistant for the Kalina AI admin dashboard. Your purpose is to intelligently route user requests. You have two capabilities:
+    let lastError: any = null;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const apiKeyInfo = await getNextApiKey();
+
+        if (!apiKeyInfo) {
+            const errorMsg = "Sorry, I can't function right now. No active API keys are available in the system. Please add one in the settings.";
+            yield { type: 'content', text: errorMsg };
+            await saveChatMessage(sessionId, 'model', { parts: [{ text: errorMsg }] });
+            return;
+        }
+
+        const ai = new GoogleGenAI({ apiKey: apiKeyInfo.keyValue });
+
+        try {
+            // --- Agent 1: Router Agent Call ---
+            const routerResponse = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: [...history, userMessage],
+                config: { 
+                    tools: [{ functionDeclarations: [getAnalyticsDataTool] }],
+                    systemInstruction: `You are a specialized AI assistant for the Kalina AI admin dashboard. Your purpose is to intelligently route user requests. You have two capabilities:
 
 1.  **Internal Knowledge**: You have a deep, built-in understanding of the application's features, pages, metrics, and settings. Use this for questions like "What is the Insights page?", "Explain LTM facts", or "How do I configure the News agent?".
 
@@ -172,52 +217,46 @@ export async function* processUserMessageStream(userInput: string, sessionId: st
 - **If the user's question is general conversation (greetings, off-topic):** You MUST NOT call any tools. Politely explain your specialized role and guide them back to dashboard-related topics.
 
 **Example friendly refusal for off-topic questions:** "My apologies, I'm an assistant designed specifically for this dashboard and can't help with general questions. Is there anything about the system's features or analytics I can explain?"`
-            },
-        });
-    } catch (error: any) {
-        console.error("Router agent API call failed:", error);
-        // Pass the error up to the UI to handle API key errors
-        throw error;
-    }
+                },
+            });
 
+            let fullResponseText = '';
 
-    let fullResponseText = '';
-
-    if (routerResponse.functionCalls && routerResponse.functionCalls.length > 0) {
-        if (routerResponse.text) {
-            yield { type: 'tool_status', message: routerResponse.text };
-        }
-        
-        const functionCalls = routerResponse.functionCalls;
-
-        const toolExecutionPromises = functionCalls.map(async (fc) => {
-            let result;
-            if (fc.name === 'get_analytics_data') {
-                result = await handleGetAnalyticsData(fc.args.section as string);
-            } else {
-                result = { error: `Unknown tool called: ${fc.name}` };
-            }
-            return {
-                functionResponse: {
-                    name: fc.name,
-                    id: fc.id,
-                    response: { result },
+            if (routerResponse.functionCalls && routerResponse.functionCalls.length > 0) {
+                if (routerResponse.text) {
+                    yield { type: 'tool_status', message: routerResponse.text };
                 }
-            };
-        });
+                
+                const functionCalls = routerResponse.functionCalls;
 
-        const functionResponseParts = await Promise.all(toolExecutionPromises);
-        
-        yield { type: 'generating' };
+                const toolExecutionPromises = functionCalls.map(async (fc) => {
+                    let result;
+                    if (fc.name === 'get_analytics_data') {
+                        result = await handleGetAnalyticsData(fc.args.section as string);
+                    } else {
+                        result = { error: `Unknown tool called: ${fc.name}` };
+                    }
+                    return {
+                        functionResponse: {
+                            name: fc.name,
+                            id: fc.id,
+                            response: { result },
+                        }
+                    };
+                });
 
-        const finalHistory = [
-            ...history,
-            userMessage,
-            { role: 'model', parts: functionCalls.map(fc => ({ functionCall: fc })) },
-            { role: 'user', parts: functionResponseParts }
-        ];
+                const functionResponseParts = await Promise.all(toolExecutionPromises);
+                
+                yield { type: 'generating' };
 
-        const systemInstruction = `You are a helpful, expert AI assistant for the Kalina AI admin dashboard. Your primary goal is to provide concise, clear, and user-friendly answers in Markdown based on the provided data and your extensive internal knowledge of the application.
+                const finalHistory = [
+                    ...history,
+                    userMessage,
+                    { role: 'model', parts: functionCalls.map(fc => ({ functionCall: fc })) },
+                    { role: 'user', parts: functionResponseParts }
+                ];
+
+                const systemInstruction = `You are a helpful, expert AI assistant for the Kalina AI admin dashboard. Your primary goal is to provide concise, clear, and user-friendly answers in Markdown based on the provided data and your extensive internal knowledge of the application.
 
 **CRITICAL RULE:** When providing a link to a page, you MUST embed it directly into the sentence where it is relevant.
 - **CORRECT:** "You can monitor user growth on the [Insights page](nav:/advanced-analytics)."
@@ -260,7 +299,7 @@ The Kalina AI Admin Panel is a tool for monitoring and managing the entire Kalin
 *   **Settings (\`/settings\`)**: A powerful, low-level database management tool. Here you can:
     *   View the schema, column names, and row count for every table in both the Main and Agent databases.
     *   Preview the 5 most recent rows from any table.
-    *   **Danger Zone**: Delete all data from a table (truncate) or reset a table's ID sequence. These are destructive actions.
+    *   **Danger Zone**: Delete all data from a table (truncate) or reset a table's ID sequence. These are destructive actions. You can also manage the AI Assistant's Gemini API keys from this page.
 
 #### 3. Glossary of Terms
 *   **Agent**: An AI function designed for a specific task (e.g., 'thought-generator', 'router').
@@ -273,47 +312,61 @@ The Kalina AI Admin Panel is a tool for monitoring and managing the entire Kalin
 
 Now, answer the user's question based on the live data provided by the tool (if any) and your extensive internal knowledge. Be helpful, clear, and concise. Remember to embed navigation links properly.`;
 
-        // --- Final Streaming Call ---
-        try {
-            const stream = await ai.models.generateContentStream({
-                model: 'gemini-2.5-flash',
-                contents: finalHistory,
-                config: { systemInstruction },
-            });
+                // --- Final Streaming Call ---
+                const stream = await ai.models.generateContentStream({
+                    model: 'gemini-2.5-flash',
+                    contents: finalHistory,
+                    config: { systemInstruction },
+                });
 
-            for await (const chunk of stream) {
-                const chunkText = chunk.text;
-                if (chunkText) {
-                    fullResponseText += chunkText;
-                    yield { type: 'content', text: chunkText };
+                for await (const chunk of stream) {
+                    const chunkText = chunk.text;
+                    if (chunkText) {
+                        fullResponseText += chunkText;
+                        yield { type: 'content', text: chunkText };
+                    }
+                }
+
+            } else {
+                // If no tool is called, use the router's direct text response
+                yield { type: 'generating' };
+                const directResponse = routerResponse.text;
+                fullResponseText = directResponse;
+                
+                // Simulate streaming for a non-tool response for consistent UI behavior
+                const words = directResponse.split(/(\s+)/); // Split by space but keep spaces
+                for (const word of words) {
+                    await new Promise(resolve => setTimeout(resolve, 25)); // short delay
+                    yield { type: 'content', text: word };
                 }
             }
-        } catch(error) {
-            console.error("Final response generation failed:", error);
-            const errorMsg = `Error: The AI failed to generate a response after processing the tool call. Please check the console.`;
-            if (!fullResponseText) { // if nothing was yielded yet
-                yield { type: 'content', text: errorMsg };
-                fullResponseText = errorMsg; // ensure error is saved
+
+            // After streaming is complete, save the final message to the database
+            if (fullResponseText) {
+                await saveChatMessage(sessionId, 'model', { parts: [{ text: fullResponseText }] });
             }
-            throw error; // Let the UI catch this to stop the loading state
-        }
+            
+            // If we get here, the API call was successful, so we break the retry loop
+            return;
 
-    } else {
-        // If no tool is called, use the router's direct text response
-        yield { type: 'generating' };
-        const directResponse = routerResponse.text;
-        fullResponseText = directResponse;
-        
-        // Simulate streaming for a non-tool response for consistent UI behavior
-        const words = directResponse.split(/(\s+)/); // Split by space but keep spaces
-        for (const word of words) {
-            await new Promise(resolve => setTimeout(resolve, 25)); // short delay
-            yield { type: 'content', text: word };
+        } catch (error: any) {
+            lastError = error;
+            const errorMessageString = error.toString();
+            console.warn(`Attempt ${attempt + 1} failed with key ID ${apiKeyInfo.keyId}:`, errorMessageString);
+
+            if (errorMessageString.includes('API key not valid') || errorMessageString.includes('API_KEY_INVALID')) {
+                await markKeyAsExhausted(apiKeyInfo.keyId);
+                // Continue to the next iteration to try a different key
+            } else {
+                // For other errors (e.g., network, server-side), don't retry, just fail.
+                throw error;
+            }
         }
     }
 
-    // After streaming is complete, save the final message to the database
-    if (fullResponseText) {
-        await saveChatMessage(sessionId, 'model', { parts: [{ text: fullResponseText }] });
-    }
+    // If the loop finishes without a successful call, it means all keys failed.
+    console.error("All API key attempts failed. Last error:", lastError);
+    const finalErrorMsg = "I'm sorry, but I was unable to connect to the AI service. All available API keys have failed. Please check the keys in the Settings page or add a new one.";
+    yield { type: 'content', text: finalErrorMsg };
+    await saveChatMessage(sessionId, 'model', { parts: [{ text: finalErrorMsg }] });
 }

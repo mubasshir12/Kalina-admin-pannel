@@ -167,49 +167,6 @@ const ChatBubble: React.FC<{
     return null;
 });
 
-const ApiKeyInputView: React.FC<{ onKeySubmit: (key: string) => void }> = ({ onKeySubmit }) => {
-    const [key, setKey] = useState('');
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (key.trim()) {
-            onKeySubmit(key.trim());
-        }
-    };
-
-    return (
-        <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-fade-in-up">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg mb-4">
-                <KeyRound size={36} className="text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-[var(--text-primary)]">Enter Your Gemini API Key</h2>
-            <p className="text-[var(--text-secondary)] mt-2 max-w-md">
-                Your API key is stored only in your browser's session and is required to use the AI Assistant.
-            </p>
-            <form onSubmit={handleSubmit} className="mt-6 w-full max-w-sm flex flex-col gap-3">
-                <input
-                    type="password"
-                    value={key}
-                    onChange={(e) => setKey(e.target.value)}
-                    placeholder="Enter your API key here..."
-                    className="form-input w-full text-center"
-                    autoFocus
-                />
-                <button type="submit" className="btn btn-primary" disabled={!key.trim()}>
-                    Save and Continue
-                </button>
-            </form>
-             <p className="text-xs text-[var(--text-secondary)] mt-4 max-w-md">
-                You can get a key from 
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-[var(--accent-color)] ml-1">
-                    Google AI Studio
-                </a>.
-            </p>
-        </div>
-    );
-};
-
-
 // --- The main AI Chat Page component ---
 const AiChatPage: React.FC = () => {
     const location = useLocation();
@@ -226,21 +183,11 @@ const AiChatPage: React.FC = () => {
         statusMessage: string | null;
         toolUsed: boolean;
     } | null>(null);
-    const [apiKeyReady, setApiKeyReady] = useState(false);
     
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-
-    useEffect(() => {
-        const storedKey = sessionStorage.getItem('user_gemini_api_key');
-        if (storedKey) {
-            setApiKeyReady(true);
-        } else {
-            setIsInitializing(false);
-        }
-    }, []);
 
     // Effect to manage session ID from URL
     useEffect(() => {
@@ -251,17 +198,22 @@ const AiChatPage: React.FC = () => {
         }
         
         if (sidFromUrl) {
-            setSessionId(sidFromUrl);
-        } else if (apiKeyReady) {
-            // Only create a new session if API key is ready and there's no session in URL
+            if (sessionId !== sidFromUrl) {
+                setSessionId(sidFromUrl);
+            }
+        } else {
+            // If there's no session in URL, create a new one.
             const newSid = crypto.randomUUID();
             navigate(`/ai-chat#session=${newSid}`, { replace: true });
         }
-    }, [location.hash, navigate, apiKeyReady]);
+    }, [location.hash, navigate, sessionId]);
 
     // Effect to fetch chat history when session ID changes
     useEffect(() => {
-        if (!apiKeyReady || !sessionId) return;
+        if (!sessionId) {
+            setIsInitializing(false);
+            return;
+        }
 
         const setupSession = async () => {
             setIsInitializing(true);
@@ -279,7 +231,7 @@ const AiChatPage: React.FC = () => {
             }
         };
         setupSession();
-    }, [sessionId, apiKeyReady]);
+    }, [sessionId]);
 
     useEffect(() => {
         scrollToBottom();
@@ -288,12 +240,6 @@ const AiChatPage: React.FC = () => {
         }
     }, [messages, isLoading, streamingMessage]);
 
-    const handleSaveKey = (key: string) => {
-        sessionStorage.setItem('user_gemini_api_key', key);
-        setApiKeyReady(true);
-        // This will trigger the useEffect to create a new session via navigation
-        navigate('/ai-chat');
-    };
 
     const handleSendMessage = async (prompt: string) => {
         if (!prompt.trim() || isLoading || !sessionId) return;
@@ -327,16 +273,6 @@ const AiChatPage: React.FC = () => {
 
         } catch (error: any) {
             console.error("AI Chat Error:", error);
-            const errorMessageString = error.toString();
-            if (errorMessageString.includes('API key not valid') || errorMessageString.includes('API_KEY_INVALID')) {
-                sessionStorage.removeItem('user_gemini_api_key');
-                setApiKeyReady(false);
-                setMessages([]);
-                setSessionId(null);
-                navigate('/ai-chat', { replace: true });
-                alert("Your API key appears to be invalid. Please enter a valid key to continue.");
-                return;
-            }
             const errorMessage = { role: 'model', parts: [{ text: "Oops, something went wrong. It might be a tool execution issue or an API error. Please check the console." }] };
             setMessages(prev => [...prev, errorMessage]);
         } finally {
@@ -364,9 +300,7 @@ const AiChatPage: React.FC = () => {
             <AiChatStyles />
             <main className="chat-main">
                 <div className="chat-messages-container hide-scrollbar">
-                    {!apiKeyReady ? (
-                        <ApiKeyInputView onKeySubmit={handleSaveKey} />
-                    ) : messages.length === 0 && !streamingMessage ? (
+                    {messages.length === 0 && !streamingMessage ? (
                         <WelcomeView onPromptClick={(p) => handleSendMessage(p)} />
                     ) : (
                         <div className="space-y-6">
@@ -386,14 +320,12 @@ const AiChatPage: React.FC = () => {
                     )}
                     <div ref={messagesEndRef} />
                 </div>
-                 {apiKeyReady && (
-                    <ChatInput
-                        input={input}
-                        setInput={setInput}
-                        handleSendMessage={handleSendMessage}
-                        isLoading={isLoading}
-                    />
-                )}
+                <ChatInput
+                    input={input}
+                    setInput={setInput}
+                    handleSendMessage={handleSendMessage}
+                    isLoading={isLoading}
+                />
             </main>
             <aside className="chat-sidebar p-6 space-y-6">
                  <div>
@@ -403,24 +335,6 @@ const AiChatPage: React.FC = () => {
                            <SuggestionCard key={i} icon={p.icon} text={p.text} onClick={() => handleSendMessage(p.text)} />
                         ))}
                     </div>
-                </div>
-                 <div>
-                    <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Settings</h3>
-                    <button 
-                        onClick={() => {
-                            sessionStorage.removeItem('user_gemini_api_key');
-                            setApiKeyReady(false);
-                            setMessages([]);
-                            setSessionId(null);
-                            navigate('/ai-chat', { replace: true });
-                        }} 
-                        className="suggestion-card w-full text-left"
-                    >
-                        <div className="flex items-start gap-3">
-                            <div className="text-slate-500 dark:text-zinc-400 mt-0.5"><KeyRound size={20} /></div>
-                            <p className="text-sm font-medium">Change API Key</p>
-                        </div>
-                    </button>
                 </div>
             </aside>
         </div>
