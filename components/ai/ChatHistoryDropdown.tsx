@@ -185,7 +185,7 @@ const ChatHistoryDropdown: React.FC<{
                 </div>
 
                  {/* Footer */}
-                <div className="p-2 border-t border-[var(--border-color)] bg-slate-50/50 dark:bg-zinc-900/50 flex items-center justify-end gap-2">
+                <div className="p-2 border-t border-[var(--border-color)] bg-slate-50/50 dark:bg-zinc-900/50 flex items-center justify-center gap-2 rounded-b-xl">
                     <button
                         onClick={handleManageKeys}
                         className="btn btn-secondary !py-2 !px-3 text-xs whitespace-nowrap"
