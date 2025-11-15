@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import type { NewsLog } from '../../types';
 import {
@@ -195,7 +196,7 @@ const NewsLogDetail: React.FC<{ log: NewsLog; onBack: () => void; }> = ({ log, o
     const dateString = logDate.toLocaleDateString(undefined, {
         year: 'numeric', month: 'long', day: 'numeric'
     });
-    const fullTimestamp = logDate.toLocaleString();
+    const fullTimestamp = logDate.toLocaleTimeString();
 
     const metadataItems = [
         { icon: <Timer size={18} />, label: 'Duration', value: `${(log.duration_ms / 1000).toFixed(2)} s` },

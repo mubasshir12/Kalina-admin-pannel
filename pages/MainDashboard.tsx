@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { StatCard, PanelCard, timeAgo } from '../components/ui';
 import { ApiDistributionChart, SuccessRateChart } from '../components/charts';
@@ -50,7 +51,7 @@ const RecentActivityFeed: React.FC<{ activity: RecentActivityLog[] }> = ({ activ
                                     <p className="text-sm text-slate-700 mt-1">{log.description}</p>
                                     <p 
                                         className="text-xs text-slate-500 mt-1.5" 
-                                        data-tooltip={new Date(log.timestamp).toLocaleString()}
+                                        data-tooltip={new Date(log.timestamp).toLocaleTimeString()}
                                     >
                                         {timeAgo(log.timestamp)}
                                     </p>

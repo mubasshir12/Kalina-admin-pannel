@@ -199,7 +199,7 @@ const AgentLogDetail: React.FC<{ log: AgentLog; onBack: () => void; }> = ({ log,
     const dateString = logDate.toLocaleDateString(undefined, {
         year: 'numeric', month: 'long', day: 'numeric'
     });
-    const fullTimestamp = logDate.toLocaleString();
+    const fullTimestamp = logDate.toLocaleTimeString();
 
     const commonMetadata = [
         { 

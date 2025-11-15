@@ -70,7 +70,8 @@ const chatStyles = `
 }
 
 .chat-input-wrapper {
-    background-color: var(--chat-bg);
+    /* This background was causing a slight color difference behind the input bar. */
+    background-color: transparent;
 }
 
 /* The form is a full-width bar, taking up the whole wrapper */

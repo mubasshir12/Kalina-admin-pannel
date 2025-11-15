@@ -158,7 +158,7 @@ const NewsLogs: React.FC<{
                                                     })}
                                                 </td>
                                                 <td className="whitespace-nowrap">
-                                                    <span data-tooltip={new Date(log.created_at).toLocaleString()}>
+                                                    <span data-tooltip={new Date(log.created_at).toLocaleTimeString()}>
                                                         {timeAgo(log.created_at)}
                                                     </span>
                                                 </td>
