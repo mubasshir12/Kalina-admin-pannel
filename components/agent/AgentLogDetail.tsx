@@ -238,59 +238,87 @@ const AgentLogDetail: React.FC<{ log: AgentLog; onBack: () => void; }> = ({ log,
     ) : null;
 
     return (
-        <div className="max-w-7xl mx-auto">
-            {/* Header with back button */}
-            <div className="mb-6 flex items-center gap-4">
-                <button onClick={onBack} className="btn btn-secondary">
-                    <ArrowLeft size={16} />
-                    <span>Back to Logs</span>
-                </button>
-                <h2 className="text-2xl font-bold text-slate-800">Agent Log Details</h2>
-            </div>
+        <>
+            <style>{`
+                /* --- Agent Log Structured View Utilities --- */
+                .structured-view-panel {
+                    background-color: var(--subtle-bg);
+                    border: 1px solid var(--subtle-border);
+                    border-radius: 0.5rem;
+                    padding: 1rem;
+                }
+                .structured-view-panel.theme-aware-hover:hover {
+                    filter: brightness(0.98);
+                }
+                html.dark .structured-view-panel.theme-aware-hover:hover {
+                    filter: brightness(1.1);
+                }
+                .accent-text {
+                    color: var(--accent-text);
+                }
+                .structured-list-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.75rem;
+                    border-radius: 0.375rem;
+                    background-color: var(--subtle-bg);
+                }
+            `}</style>
+            <div className="max-w-7xl mx-auto">
+                {/* Header with back button */}
+                <div className="mb-6 flex items-center gap-4">
+                    <button onClick={onBack} className="btn btn-secondary">
+                        <ArrowLeft size={16} />
+                        <span>Back to Logs</span>
+                    </button>
+                    <h2 className="text-2xl font-bold text-slate-800">Agent Log Details</h2>
+                </div>
 
-            {/* Main layout for all content */}
-            <div className="flex flex-col gap-6">
-                
-                {/* Metadata Card (always on top) */}
-                <PanelCard className="!p-0">
-                    <div className={`p-4 border-b-4 ${isSuccess ? 'border-green-500' : 'border-red-500'}`}>
-                        <span className={`status-badge ${isSuccess ? 'success' : 'failure'}`}>{log.status}</span>
-                    </div>
-                    <div className="p-6">
-                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-6 gap-y-4">
-                            {metadataItems.map((item, index) => (
-                                <React.Fragment key={item.label}>
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <div className="flex-shrink-0 text-slate-500 bg-slate-100 p-2 rounded-full dark:bg-zinc-700 dark:text-zinc-300">
-                                            {React.cloneElement(item.icon, { size: 16 })}
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold dark:text-zinc-400">{item.label}</p>
-                                            <div className="font-bold text-[var(--text-primary)] text-base">{item.value}</div>
-                                        </div>
-                                    </div>
-                                    {index < metadataItems.length - 1 && (
-                                        <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-zinc-700 self-center"></div>
-                                    )}
-                                </React.Fragment>
-                            ))}
+                {/* Main layout for all content */}
+                <div className="flex flex-col gap-6">
+                    
+                    {/* Metadata Card (always on top) */}
+                    <PanelCard className="!p-0">
+                        <div className={`p-4 border-b-4 ${isSuccess ? 'border-green-500' : 'border-red-500'}`}>
+                            <span className={`status-badge ${isSuccess ? 'success' : 'failure'}`}>{log.status}</span>
                         </div>
+                        <div className="p-6">
+                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-6 gap-y-4">
+                                {metadataItems.map((item, index) => (
+                                    <React.Fragment key={item.label}>
+                                        <div className="flex items-center gap-3 text-sm">
+                                            <div className="flex-shrink-0 text-slate-500 bg-slate-100 p-2 rounded-full dark:bg-zinc-700 dark:text-zinc-300">
+                                                {React.cloneElement(item.icon, { size: 16 })}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold dark:text-zinc-400">{item.label}</p>
+                                                <div className="font-bold text-[var(--text-primary)] text-base">{item.value}</div>
+                                            </div>
+                                        </div>
+                                        {index < metadataItems.length - 1 && (
+                                            <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-zinc-700 self-center"></div>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </div>
+                    </PanelCard>
+
+
+                    {/* Error Message Panel if it exists (also on top) */}
+                    {errorMessagePanel}
+
+                    {/* Content Panels Grid (side-by-side on md+) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:items-start">
+                        <LogContentPanel title="Prompt" icon={<Terminal size={18} />} copyText={log.prompt}>
+                            <pre className={codeBlockClasses}>{log.prompt}</pre>
+                        </LogContentPanel>
+                        {renderResponsePanel(log)}
                     </div>
-                </PanelCard>
-
-
-                {/* Error Message Panel if it exists (also on top) */}
-                {errorMessagePanel}
-
-                {/* Content Panels Grid (side-by-side on md+) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:items-start">
-                    <LogContentPanel title="Prompt" icon={<Terminal size={18} />} copyText={log.prompt}>
-                        <pre className={codeBlockClasses}>{log.prompt}</pre>
-                    </LogContentPanel>
-                    {renderResponsePanel(log)}
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

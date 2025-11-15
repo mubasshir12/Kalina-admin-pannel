@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bot, User, CornerDownLeft, Sparkles, ChevronRight, Server, Users, Newspaper, LineChart, Database, KeyRound, PlusCircle, Trash2 } from 'lucide-react';
+import { Bot, User, CornerDownLeft, Sparkles, ChevronRight, Server, Users, Newspaper, LineChart, Database, KeyRound, PlusCircle, Trash2, Loader2 } from 'lucide-react';
 import { ConfirmationModal, CopyButton } from '../components/ui';
 import { initializeSession, processUserMessageStream, deleteChatHistory } from '../services/aiChatService';
 import AiChatStyles from '../components/ai/AiChatStyles';
@@ -13,10 +13,11 @@ const SimpleMarkdown: React.FC<{ text: string }> = React.memo(({ text }) => {
     const navLinkRegex = /\[([^\]]+)\]\(nav:([^)]+)\)/g;
 
     const renderSegment = (segment: string, key: string) => {
+        // These replacements are now handled by CSS, but keeping strong/em for semantic HTML
         const html = segment
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/`([^`]+)`/g, '<code class="bg-[var(--chat-suggestion-bg)] font-mono text-sm rounded px-1 py-0.5">$1</code>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
             .replace(/\n/g, '<br />');
         return <span key={key} dangerouslySetInnerHTML={{ __html: html }} />;
     };
@@ -35,7 +36,7 @@ const SimpleMarkdown: React.FC<{ text: string }> = React.memo(({ text }) => {
                 <Link
                     key={`${baseKey}-link-${counter}`}
                     to={match[2]}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 my-1 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-semibold rounded-lg text-sm hover:bg-indigo-200 dark:hover:bg-indigo-500/30 transition-colors"
+                    className="chat-nav-link"
                 >
                     {match[1]} <ChevronRight size={14} />
                 </Link>
@@ -53,19 +54,19 @@ const SimpleMarkdown: React.FC<{ text: string }> = React.memo(({ text }) => {
     const parts = text.split(/(```[\s\S]*?```)/g);
 
     return (
-        <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed space-y-4">
+        <div className="chat-markdown-content space-y-4">
             {parts.map((part, index) => {
                 if (!part) return null;
 
                 if (part.startsWith('```')) {
                     const codeContent = part.replace(/^```\w*\n?|```$/g, '').trim();
                     return (
-                        <div key={index} className="bg-slate-900 text-white rounded-lg overflow-hidden relative group text-sm not-prose">
-                            <div className="flex justify-between items-center text-xs px-4 py-1.5 bg-slate-800 text-slate-400">
+                        <div key={index} className="chat-code-block not-prose">
+                            <div className="chat-code-block-header">
                                 <span>code</span>
-                                <CopyButton textToCopy={codeContent} className="!opacity-100 !static !bg-transparent hover:!bg-slate-700 !text-white" />
+                                <CopyButton textToCopy={codeContent} className="chat-code-copy-button" />
                             </div>
-                            <pre className="p-4 overflow-x-auto"><code className="font-mono">{codeContent}</code></pre>
+                            <pre className="chat-code-block-pre"><code className="chat-code-block-code">{codeContent}</code></pre>
                         </div>
                     );
                 }
@@ -77,7 +78,7 @@ const SimpleMarkdown: React.FC<{ text: string }> = React.memo(({ text }) => {
                     if (para.trim().startsWith('- ')) {
                         const items = para.split('\n').map(item => item.replace(/^- /, ''));
                         return (
-                            <ul key={paraKey} className="list-disc pl-5 space-y-1">
+                            <ul key={paraKey}>
                                 {items.map((item, i) => (
                                     <li key={i}>{renderWithLinks(item, `${paraKey}-${i}`)}</li>
                                 ))}
@@ -85,7 +86,7 @@ const SimpleMarkdown: React.FC<{ text: string }> = React.memo(({ text }) => {
                         );
                     }
                     if (para.startsWith('### ')) {
-                        return <h3 key={paraKey} className="text-lg font-bold">{renderWithLinks(para.substring(4), paraKey)}</h3>;
+                        return <h3 key={paraKey}>{renderWithLinks(para.substring(4), paraKey)}</h3>;
                     }
                     return <p key={paraKey}>{renderWithLinks(para, paraKey)}</p>;
                 });
@@ -129,11 +130,7 @@ const WelcomeView: React.FC<{ onPromptClick: (prompt: string) => void }> = ({ on
     );
 };
 
-const ChatBubble: React.FC<{ 
-    message: any; 
-    streamStatus?: 'thinking' | 'tool' | 'generating';
-    statusMessage?: string | null;
-}> = React.memo(({ message, streamStatus, statusMessage }) => {
+const ChatBubble: React.FC<{ message: any }> = React.memo(({ message }) => {
     if (message.role === 'user') {
         return (
             <div className="flex items-start gap-3 justify-end animate-fade-in-up">
@@ -146,19 +143,37 @@ const ChatBubble: React.FC<{
 
     if (message.role === 'model') {
         const hasContent = message.parts[0].text && message.parts[0].text.length > 0;
+        
         return (
             <div className="animate-fade-in-up">
                 <div className="text-[var(--chat-model-bubble-text)] max-w-4xl">
-                    {!hasContent && streamStatus ? (
-                        <div className="flex items-center gap-3">
-                            {streamStatus === 'generating' ? (
-                                <div className="thinking-dots"><span></span><span></span><span></span></div>
-                            ) : (
-                                <span className="text-sm text-[var(--text-secondary)]">{statusMessage}</span>
-                            )}
-                        </div>
-                    ) : (
+                    {hasContent ? (
                         <SimpleMarkdown text={message.parts[0].text} />
+                    ) : (
+                        <>
+                            {/* Initial thinking state with new spinner */}
+                            {message.status === 'thinking' && (
+                                <div className="flex items-center gap-3">
+                                    <Loader2 size={16} className="animate-spin text-[var(--text-secondary)]" />
+                                    <span className="text-sm text-[var(--text-secondary)]">{message.statusMessage}</span>
+                                </div>
+                            )}
+
+                            {/* State when tool is called and we are waiting for the final response */}
+                            {(message.status === 'tool' || (message.status === 'generating' && message.toolUsed)) && (
+                                <div className="flex flex-col items-start gap-2">
+                                    {message.statusMessage && (
+                                        <span className="text-sm text-[var(--text-secondary)]">{message.statusMessage}</span>
+                                    )}
+                                    <div className="thinking-dots"><span></span><span></span><span></span></div>
+                                </div>
+                            )}
+                            
+                            {/* Fallback for non-tool generating phase to keep a loading indicator */}
+                            {message.status === 'generating' && !message.toolUsed && (
+                                 <div className="thinking-dots"><span></span><span></span><span></span></div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -177,12 +192,6 @@ const AiChatPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [isInitializing, setIsInitializing] = useState(true);
-    const [streamingMessage, setStreamingMessage] = useState<{
-        content: string;
-        status: 'thinking' | 'tool' | 'generating';
-        statusMessage: string | null;
-        toolUsed: boolean;
-    } | null>(null);
     
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -201,22 +210,25 @@ const AiChatPage: React.FC = () => {
             if (sessionId !== sidFromUrl) {
                 setSessionId(sidFromUrl);
             }
-        } else {
-            // If there's no session in URL, create a new one.
-            const newSid = crypto.randomUUID();
-            navigate(`/ai-chat#session=${newSid}`, { replace: true });
+        } else if (location.pathname === '/ai-chat' && !sessionId) {
+             const newSid = crypto.randomUUID();
+            // Using a timeout to ensure this navigation doesn't conflict with initial render cycles.
+            setTimeout(() => navigate(`/ai-chat#session=${newSid}`, { replace: true }), 0);
         }
-    }, [location.hash, navigate, sessionId]);
+    }, [location.hash, location.pathname, navigate, sessionId]);
+
 
     // Effect to fetch chat history when session ID changes
     useEffect(() => {
         if (!sessionId) {
-            setIsInitializing(false);
+            // If there's no session ID yet, we're likely about to create one.
+            // Avoid setting initializing to false immediately to prevent a flash of the welcome screen.
             return;
         }
-
+    
         const setupSession = async () => {
             setIsInitializing(true);
+            setMessages([]); // Clear previous session's messages
             try {
                 const { history } = await initializeSession(sessionId);
                 setMessages(history);
@@ -238,46 +250,73 @@ const AiChatPage: React.FC = () => {
         if (textareaRef.current && !isLoading) {
             textareaRef.current.focus();
         }
-    }, [messages, isLoading, streamingMessage]);
+    }, [messages, isLoading]);
 
 
     const handleSendMessage = async (prompt: string) => {
         if (!prompt.trim() || isLoading || !sessionId) return;
-
+    
         const userMessage = { role: 'user', parts: [{ text: prompt }] };
-        const newMessages = [...messages, userMessage];
-        setMessages(newMessages);
+        const initialModelMessage = { 
+            role: 'model', 
+            parts: [{ text: '' }],
+            status: 'thinking',
+            statusMessage: 'Thinking...',
+            toolUsed: false,
+        };
+    
+        setMessages(prev => [...prev, userMessage, initialModelMessage]);
         setInput('');
         setIsLoading(true);
-        setStreamingMessage({ content: '', status: 'thinking', statusMessage: 'Thinking...', toolUsed: false });
-
+        
+        const userTimestamp = new Date().toISOString();
+    
         try {
-            const stream = processUserMessageStream(prompt, sessionId, newMessages);
-            let finalMessage = { content: '', toolUsed: false };
-
+            const stream = processUserMessageStream(prompt, sessionId, messages, userTimestamp);
+            let finalContent = '';
+    
             for await (const chunk of stream) {
-                if (chunk.type === 'thinking') {
-                    setStreamingMessage(prev => ({ ...prev!, status: 'thinking', statusMessage: 'Thinking...' }));
-                } else if (chunk.type === 'tool_status') {
-                    setStreamingMessage(prev => ({ ...prev!, status: 'tool', statusMessage: chunk.message, toolUsed: true }));
-                    finalMessage.toolUsed = true;
-                } else if (chunk.type === 'generating') {
-                     setStreamingMessage(prev => ({ ...prev!, status: 'generating', statusMessage: null }));
-                } else if (chunk.type === 'content') {
-                    finalMessage.content += chunk.text;
-                    setStreamingMessage(prev => ({ ...prev!, content: finalMessage.content }));
-                }
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    const lastMessage = newMessages[newMessages.length - 1];
+    
+                    if (lastMessage && lastMessage.role === 'model') {
+                        let updatedMessage = { ...lastMessage };
+                        if (chunk.type === 'tool_status') {
+                            updatedMessage.status = 'tool';
+                            updatedMessage.statusMessage = chunk.message;
+                            updatedMessage.toolUsed = true;
+                        } else if (chunk.type === 'generating') {
+                            updatedMessage.status = 'generating';
+                            updatedMessage.statusMessage = null; // Clear status message when content starts
+                        } else if (chunk.type === 'content') {
+                            updatedMessage.parts = [{ text: lastMessage.parts[0].text + chunk.text }];
+                            finalContent += chunk.text;
+                        }
+                        newMessages[newMessages.length - 1] = updatedMessage;
+                    }
+                    return newMessages;
+                });
             }
-            
-            setMessages(prev => [...prev, { role: 'model', parts: [{ text: finalMessage.content }], toolUsed: finalMessage.toolUsed }]);
-
+    
         } catch (error: any) {
             console.error("AI Chat Error:", error);
-            const errorMessage = { role: 'model', parts: [{ text: "Oops, something went wrong. It might be a tool execution issue or an API error. Please check the console." }] };
-            setMessages(prev => [...prev, errorMessage]);
+            const errorMessage = { 
+                role: 'model', 
+                parts: [{ text: "Oops, something went wrong. It might be a tool execution issue or an API error. Please check the console." }] 
+            };
+            setMessages(prev => {
+                const newMessages = [...prev];
+                // Replace the placeholder with the error message
+                if (newMessages[newMessages.length - 1]?.role === 'model') {
+                    newMessages[newMessages.length - 1] = errorMessage;
+                } else {
+                    newMessages.push(errorMessage);
+                }
+                return newMessages;
+            });
         } finally {
             setIsLoading(false);
-            setStreamingMessage(null);
         }
     };
 
@@ -300,22 +339,11 @@ const AiChatPage: React.FC = () => {
             <AiChatStyles />
             <main className="chat-main">
                 <div className="chat-messages-container hide-scrollbar">
-                    {messages.length === 0 && !streamingMessage ? (
+                    {messages.length === 0 ? (
                         <WelcomeView onPromptClick={(p) => handleSendMessage(p)} />
                     ) : (
                         <div className="space-y-6">
                             {renderedMessages}
-                            {streamingMessage && (
-                                <ChatBubble 
-                                    message={{ 
-                                        role: 'model', 
-                                        parts: [{ text: streamingMessage.content }],
-                                        toolUsed: streamingMessage.toolUsed,
-                                    }} 
-                                    streamStatus={streamingMessage.status}
-                                    statusMessage={streamingMessage.statusMessage}
-                                />
-                            )}
                         </div>
                     )}
                     <div ref={messagesEndRef} />

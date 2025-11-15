@@ -129,37 +129,111 @@ export const CustomDropdown: React.FC<{
     const displayValue = displayLabels?.[value] || value;
 
     return (
-        <div ref={dropdownRef} className={`custom-dropdown-wrapper ${className}`}>
-            <button
-                type="button"
-                className={`custom-dropdown-trigger ${triggerClassName}`}
-                aria-haspopup="listbox"
-                aria-expanded={isOpen}
-                onClick={() => setIsOpen(!isOpen)}
-            >
-                <span className="capitalize truncate min-w-0">{displayValue}</span>
-                <ChevronDown size={16} className="text-slate-500 chevron" />
-            </button>
-            <div
-                className={`custom-dropdown-panel ${isOpen ? 'open' : ''}`}
-                role="listbox"
-            >
-                <div className="max-h-60 overflow-y-auto">
-                    {options.map((option) => (
-                        <button
-                            key={option}
-                            type="button"
-                            role="option"
-                            aria-selected={value === option}
-                            className={`custom-dropdown-option capitalize ${value === option ? 'active' : ''}`}
-                            onClick={() => handleSelect(option)}
-                        >
-                            {displayLabels?.[option] || option}
-                        </button>
-                    ))}
+        <>
+            <style>{`
+                .custom-dropdown-wrapper {
+                    position: relative;
+                    width: 100%;
+                }
+                .custom-dropdown-trigger {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    width: 100%;
+                    text-align: left;
+                    background-color: var(--card-bg);
+                    border: 1px solid #d1d5db;
+                    transition: all 0.2s ease-in-out;
+                    border-radius: 0.5rem;
+                    color: var(--text-primary);
+                    padding: 0.625rem 1rem;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                }
+                .custom-dropdown-trigger:focus {
+                    outline: none;
+                    border-color: var(--accent-color);
+                    box-shadow: 0 0 0 3px var(--accent-glow);
+                }
+                .custom-dropdown-trigger .chevron {
+                    transition: transform 0.2s ease;
+                }
+                .custom-dropdown-trigger[aria-expanded="true"] .chevron {
+                    transform: rotate(180deg);
+                }
+                .custom-dropdown-panel {
+                    position: absolute;
+                    top: calc(100% + 0.5rem);
+                    left: 0;
+                    right: 0;
+                    background-color: var(--card-bg);
+                    border: 1px solid var(--border-color);
+                    border-radius: 0.5rem;
+                    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+                    z-index: 50;
+                    overflow: hidden;
+                    transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+                    transform-origin: top;
+                    opacity: 0;
+                    transform: scale(0.98);
+                    pointer-events: none;
+                }
+                .custom-dropdown-panel.open {
+                    opacity: 1;
+                    transform: scale(1);
+                    pointer-events: auto;
+                }
+                .custom-dropdown-option {
+                    display: block;
+                    width: 100%;
+                    text-align: left;
+                    padding: 0.625rem 1rem;
+                    font-size: 0.9rem;
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    transition: background-color 0.15s ease;
+                    white-space: nowrap;
+                }
+                .custom-dropdown-option:hover, .custom-dropdown-option.active {
+                    background-color: #f3f4f6; /* gray-100 */
+                }
+                .custom-dropdown-option.active {
+                    font-weight: 600;
+                    color: var(--accent-color);
+                }
+            `}</style>
+            <div ref={dropdownRef} className={`custom-dropdown-wrapper ${className}`}>
+                <button
+                    type="button"
+                    className={`custom-dropdown-trigger ${triggerClassName}`}
+                    aria-haspopup="listbox"
+                    aria-expanded={isOpen}
+                    onClick={() => setIsOpen(!isOpen)}
+                >
+                    <span className="capitalize truncate min-w-0">{displayValue}</span>
+                    <ChevronDown size={16} className="text-slate-500 chevron" />
+                </button>
+                <div
+                    className={`custom-dropdown-panel ${isOpen ? 'open' : ''}`}
+                    role="listbox"
+                >
+                    <div className="max-h-60 overflow-y-auto">
+                        {options.map((option) => (
+                            <button
+                                key={option}
+                                type="button"
+                                role="option"
+                                aria-selected={value === option}
+                                className={`custom-dropdown-option capitalize ${value === option ? 'active' : ''}`}
+                                onClick={() => handleSelect(option)}
+                            >
+                                {displayLabels?.[option] || option}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 
@@ -354,26 +428,50 @@ export const DateRangeFilter: React.FC<{
 
 
     return (
-        <div className="pill-nav-container">
-            <div className="inline-flex items-stretch gap-2">
-                <PresetButton label="All Time" filter="all" />
-                <PresetButton label="Last 7 Days" filter="7d" />
+        <>
+            <style>{`
+                /* --- Date Input --- */
+                /* Reset appearance to allow full custom styling */
+                input[type="date"] {
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    appearance: none;
+                    background-image: none;
+                }
                 
-                <button
-                    ref={customButtonRef}
-                    onClick={togglePopover}
-                    className={`btn text-sm px-2 sm:px-4 py-2 flex items-center gap-2 whitespace-nowrap ${
-                        activeFilter === 'custom'
-                            ? 'btn-primary'
-                            : 'btn-secondary'
-                    }`}
-                >
-                    <CalendarDays size={16} className="flex-shrink-0" />
-                    <span className="truncate">{getCustomDisplayLabel()}</span>
-                </button>
+                /* Force hide the default calendar icon in WebKit browsers */
+                input[type="date"]::-webkit-calendar-picker-indicator {
+                    display: none !important;
+                }
+                
+                /* Hide spin buttons in WebKit browsers */
+                input[type="date"]::-webkit-inner-spin-button,
+                input[type="date"]::-webkit-outer-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+            `}</style>
+            <div className="pill-nav-container">
+                <div className="inline-flex items-stretch gap-2">
+                    <PresetButton label="All Time" filter="all" />
+                    <PresetButton label="Last 7 Days" filter="7d" />
+                    
+                    <button
+                        ref={customButtonRef}
+                        onClick={togglePopover}
+                        className={`btn text-sm px-2 sm:px-4 py-2 flex items-center gap-2 whitespace-nowrap ${
+                            activeFilter === 'custom'
+                                ? 'btn-primary'
+                                : 'btn-secondary'
+                        }`}
+                    >
+                        <CalendarDays size={16} className="flex-shrink-0" />
+                        <span className="truncate">{getCustomDisplayLabel()}</span>
+                    </button>
+                </div>
+                {popoverContent}
             </div>
-            {popoverContent}
-        </div>
+        </>
     );
 };
 

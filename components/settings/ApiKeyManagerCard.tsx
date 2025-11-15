@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PanelCard, ConfirmationModal } from '../ui';
 import { getApiKeys, addApiKey, deleteApiKey, resetApiKeysStatus } from '../../services/aiChatService';
 import { Sparkles, KeyRound, Eye, EyeOff, Trash2, PlusCircle, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { LoadingSpinner } from '../skeletons'; // Import LoadingSpinner
 
 interface ApiKey {
     id: number;
@@ -132,16 +133,11 @@ const ApiKeyManagerCard: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-end">
-                    <button onClick={handleResetAllExhausted} className="btn btn-secondary text-sm" disabled={isResetting || exhaustedCount === 0}>
-                        <RefreshCw size={14} className={isResetting ? 'animate-spin' : ''} />
-                        {isResetting ? 'Resetting...' : `Reset ${exhaustedCount} Exhausted Keys`}
-                    </button>
-                </div>
-
-                <div className="mt-4 space-y-3">
+                <div className="mt-6 space-y-3">
                     {isLoading ? (
-                        <p className="text-center text-slate-500">Loading keys...</p>
+                        <div className="flex items-center justify-center py-8">
+                            <LoadingSpinner />
+                        </div>
                     ) : keys.length > 0 ? (
                         keys.map(key => <ApiKeyRow key={key.id} apiKey={key} />)
                     ) : (
@@ -175,9 +171,15 @@ const ApiKeyManagerCard: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <button onClick={() => setIsAdding(true)} className="btn btn-primary w-full">
-                            <PlusCircle size={16} /> Add API Key
-                        </button>
+                        <div className="flex justify-between items-center gap-4 pt-4 mt-6 border-t border-slate-200 dark:border-zinc-700">
+                             <button onClick={handleResetAllExhausted} className="btn btn-secondary" disabled={isResetting || exhaustedCount === 0}>
+                                <RefreshCw size={14} className={isResetting ? 'animate-spin' : ''} />
+                                {isResetting ? 'Resetting...' : `Reset ${exhaustedCount} Keys`}
+                            </button>
+                            <button onClick={() => setIsAdding(true)} className="btn btn-primary">
+                                <PlusCircle size={16} /> Add API Key
+                            </button>
+                        </div>
                     )}
                 </div>
             </PanelCard>

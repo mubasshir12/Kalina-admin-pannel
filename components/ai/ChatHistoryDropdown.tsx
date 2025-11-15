@@ -4,6 +4,7 @@ import { PlusCircle, Trash2, MessageSquare, Loader2, KeyRound, Settings } from '
 import { getChatSessions, deleteChatHistory } from '../../services/aiChatService';
 import { timeAgo } from '../ui';
 import type { ChatSession } from '../../types';
+import { ChatSessionItemSkeletonLoader } from '../skeletons'; // FIX: Import the correct skeleton loader
 
 // Helper to check dates
 const isToday = (someDate: Date) => {
@@ -18,7 +19,7 @@ const isYesterday = (someDate: Date) => {
     yesterday.setDate(yesterday.getDate() - 1);
     return someDate.getDate() === yesterday.getDate() &&
         someDate.getMonth() === yesterday.getMonth() &&
-        someDate.getFullYear() === yesterday.getFullYear();
+        yesterday.getFullYear() === someDate.getFullYear(); // FIX: Added full year comparison
 };
 
 
@@ -31,13 +32,19 @@ const ChatHistoryDropdown: React.FC<{
     const location = useLocation();
     const navigate = useNavigate();
     const [sessions, setSessions] = useState<ChatSession[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // Initialize loading state
 
     const fetchAndSetSessions = async () => {
         setLoading(true);
-        const fetchedSessions = await getChatSessions();
-        setSessions(fetchedSessions);
-        setLoading(false);
+        try {
+            const fetchedSessions = await getChatSessions();
+            setSessions(fetchedSessions);
+        } catch (error) {
+            console.error("Failed to fetch chat sessions:", error);
+            // Optionally, handle error display to user
+        } finally {
+            setLoading(false);
+        }
     };
     
     useEffect(() => {
@@ -112,9 +119,9 @@ const ChatHistoryDropdown: React.FC<{
                  <Link
                     to={`/ai-chat#session=${session.session_id}`}
                     onClick={onClose}
-                    className={`flex items-center gap-3 px-4 py-2 w-full transition-colors ${
+                    className={`flex items-center gap-3 px-4 py-2 w-full transition-colors rounded-md ${
                         isActive
-                            ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold'
+                            ? 'chat-session-active'
                             : 'hover:bg-[var(--sidebar-link-hover-bg)]'
                     }`}
                 >
@@ -142,7 +149,7 @@ const ChatHistoryDropdown: React.FC<{
         return (
             <div>
                 <h4 className="text-xs font-bold text-[var(--sidebar-text-muted)] uppercase tracking-wider px-4 pt-3 pb-1">{title}</h4>
-                <ul className="space-y-0.5">
+                <ul className="space-y-0.5 p-2">
                     {sessions.map(session => <ChatSessionItem key={session.session_id} session={session} />)}
                 </ul>
             </div>
@@ -165,10 +172,7 @@ const ChatHistoryDropdown: React.FC<{
                 {/* Main Content */}
                 <div className="flex-grow max-h-80 overflow-y-auto hide-scrollbar">
                     {loading ? (
-                        <div className="flex items-center justify-center gap-2 text-sm text-[var(--text-secondary)] py-4">
-                            <Loader2 size={16} className="animate-spin" />
-                            <span>Loading chats...</span>
-                        </div>
+                        <ChatSessionItemSkeletonLoader numberOfItems={Math.max(3, sessions.length)} />
                     ) : sessions.length === 0 ? (
                          <div className="flex flex-col items-center justify-center text-center text-sm text-[var(--text-secondary)] py-8 px-4">
                             <MessageSquare size={32} className="opacity-60 mb-2"/>
@@ -185,7 +189,7 @@ const ChatHistoryDropdown: React.FC<{
                 </div>
 
                  {/* Footer */}
-                <div className="p-2 border-t border-[var(--border-color)] bg-slate-50/50 dark:bg-zinc-900/50 flex items-center justify-center gap-2 rounded-b-xl">
+                <div className="p-2 border-t border-[var(--border-color)] dropdown-footer flex items-center justify-center gap-2 rounded-b-xl">
                     <button
                         onClick={handleManageKeys}
                         className="btn btn-secondary !py-2 !px-3 text-xs whitespace-nowrap"

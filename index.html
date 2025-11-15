@@ -59,18 +59,6 @@
         --icon-fg-blue: #2563eb;
         --icon-bg-purple: #ede9fe;
         --icon-fg-purple: #7c3aed;
-        
-        /* NEW: AI Chat Variables */
-        --chat-bg: #f9fafb;
-        --chat-sidebar-bg: #ffffff;
-        --chat-input-bg: #ffffff;
-        --chat-user-bubble-bg: #4f46e5;
-        --chat-user-bubble-text: #ffffff;
-        --chat-model-bubble-bg: #ffffff;
-        --chat-model-bubble-text: #1f2937;
-        --chat-suggestion-bg: #f3f4f6;
-        --chat-suggestion-hover-bg: #e5e7eb;
-        --chat-suggestion-text: #4b5563;
     }
 
     html.dark {
@@ -117,18 +105,6 @@
         --icon-fg-blue: #93c5fd;
         --icon-bg-purple: rgba(168, 85, 247, 0.2);
         --icon-fg-purple: #c4b5fd;
-        
-        /* NEW: AI Chat Dark Mode Variables */
-        --chat-bg: #1f2937;
-        --chat-sidebar-bg: #1f2937;
-        --chat-input-bg: #27272A;
-        --chat-user-bubble-bg: #4f46e5;
-        --chat-user-bubble-text: #ffffff;
-        --chat-model-bubble-bg: #27272A;
-        --chat-model-bubble-text: #f4f4f5;
-        --chat-suggestion-bg: #3f3f46;
-        --chat-suggestion-hover-bg: #52525b;
-        --chat-suggestion-text: #d4d4d8;
     }
     
     /* --- FIX: Dark Mode Border, Background, and Accent Overrides --- */
@@ -258,36 +234,6 @@
     h2, h3 { color: var(--text-primary); }
     .font-cursive { font-family: 'Pacifico', cursive; }
 
-    /* --- Sidebar --- */
-    .sidebar { background-color: var(--sidebar-bg); border-right: 1px solid var(--sidebar-border); }
-    .sidebar-header-title { color: var(--sidebar-text-primary); font-weight: 700; font-size: 1.25rem; }
-    .sidebar-link { position: relative; display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 1rem; border-radius: 0.5rem; font-weight: 500; color: var(--sidebar-text-secondary); transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; }
-    .sidebar-link:hover { background-color: var(--sidebar-link-hover-bg); color: var(--sidebar-text-primary); }
-    .sidebar-link.active { background-image: linear-gradient(90deg, var(--sidebar-link-hover-bg), transparent); color: var(--sidebar-text-primary); font-weight: 600; }
-    .sidebar-link.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background-color: var(--accent-color); border-radius: 0 4px 4px 0; }
-    .sidebar-nested-link { padding-left: 1rem; font-size: 0.9rem; }
-    .sidebar-section summary { display: flex; justify-content: space-between; align-items: center; list-style: none; cursor: pointer; padding: 0.75rem 0.5rem; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sidebar-text-muted); transition: color 0.2s ease-in-out; }
-    .sidebar-section summary:hover { color: var(--sidebar-text-primary); }
-    .sidebar-section summary::-webkit-details-marker { display: none; }
-    .sidebar-section .chevron-icon { transition: transform 0.2s ease; }
-    .sidebar-section[open] > summary .chevron-icon { transform: rotate(180deg); }
-    
-    /* --- Collapsed Sidebar Adjustments --- */
-    /* On mobile, a "collapsed" sidebar should still look expanded. These rules apply only on desktop. */
-    @media (min-width: 768px) {
-        .sidebar.sidebar-collapsed .sidebar-link {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-            justify-content: center;
-        }
-        .sidebar.sidebar-collapsed .sidebar-section summary {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-            justify-content: center;
-        }
-    }
-
-
     /* --- Pill Navigation --- */
     .pill-nav-container {
         max-width: 100%;
@@ -366,99 +312,7 @@
     .btn-secondary:hover:not(:disabled) { background-color: #f9fafb; color: var(--text-primary); }
     .modal-bg { background-color: rgba(17, 24, 39, 0.3); backdrop-filter: blur(4px); }
     .modal-content { background-color: var(--card-bg); border-radius: 0.75rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
-
-    /* --- Date Input --- */
-    /* Reset appearance to allow full custom styling */
-    input[type="date"] {
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-        background-image: none;
-    }
-    
-    /* Force hide the default calendar icon in WebKit browsers */
-    input[type="date"]::-webkit-calendar-picker-indicator {
-        display: none !important;
-    }
-    
-    /* Hide spin buttons in WebKit browsers */
-    input[type="date"]::-webkit-inner-spin-button,
-    input[type="date"]::-webkit-outer-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-    
-    /* --- Custom Dropdown --- */
-    .custom-dropdown-wrapper {
-        position: relative;
-        width: 100%;
-    }
-    .custom-dropdown-trigger {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        text-align: left;
-        background-color: var(--card-bg);
-        border: 1px solid #d1d5db;
-        transition: all 0.2s ease-in-out;
-        border-radius: 0.5rem;
-        color: var(--text-primary);
-        padding: 0.625rem 1rem;
-        font-size: 0.9rem;
-        cursor: pointer;
-    }
-    .custom-dropdown-trigger:focus {
-        outline: none;
-        border-color: var(--accent-color);
-        box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-    .custom-dropdown-trigger .chevron {
-        transition: transform 0.2s ease;
-    }
-    .custom-dropdown-trigger[aria-expanded="true"] .chevron {
-        transform: rotate(180deg);
-    }
-    .custom-dropdown-panel {
-        position: absolute;
-        top: calc(100% + 0.5rem);
-        left: 0;
-        right: 0;
-        background-color: var(--card-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 0.5rem;
-        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        z-index: 50;
-        overflow: hidden;
-        transition: opacity 0.15s ease-out, transform 0.15s ease-out;
-        transform-origin: top;
-        opacity: 0;
-        transform: scale(0.98);
-        pointer-events: none;
-    }
-    .custom-dropdown-panel.open {
-        opacity: 1;
-        transform: scale(1);
-        pointer-events: auto;
-    }
-    .custom-dropdown-option {
-        display: block;
-        width: 100%;
-        text-align: left;
-        padding: 0.625rem 1rem;
-        font-size: 0.9rem;
-        color: var(--text-primary);
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-        white-space: nowrap;
-    }
-    .custom-dropdown-option:hover, .custom-dropdown-option.active {
-        background-color: #f3f4f6; /* gray-100 */
-    }
-    .custom-dropdown-option.active {
-        font-weight: 600;
-        color: var(--accent-color);
-    }
+    .dropdown-footer { background-color: var(--dropdown-footer-bg); }
 
     /* --- Spinner Loader --- */
     .loader {
@@ -554,36 +408,6 @@
         border-color: var(--sidebar-bg) transparent transparent transparent;
         bottom: 100%;
     }
-    
-    /* --- Custom Tooltip (Sidebar Specific) --- */
-    .sidebar-tooltip-wrapper[data-tooltip]::after { /* Tooltip Content */
-        left: calc(100% + 8px);
-        top: 50%;
-        bottom: auto;
-        transform: translateY(-50%);
-    }
-    .sidebar-tooltip-wrapper[data-tooltip]::before { /* Tooltip Arrow */
-        left: calc(100% + 3px);
-        top: 50%;
-        bottom: auto;
-        transform: translateY(-50%);
-        border-color: transparent var(--sidebar-bg) transparent transparent;
-    }
-    /* FIX: Invert sidebar footer tooltip colors for better contrast */
-    .sidebar-tooltip-wrapper[data-tooltip]::after {
-        background-color: #1f2937; /* Dark background for light theme */
-        color: #f9fafb; /* Light text for light theme */
-    }
-    .sidebar-tooltip-wrapper[data-tooltip]::before {
-        border-right-color: #1f2937;
-    }
-    html.dark .sidebar-tooltip-wrapper[data-tooltip]::after {
-        background-color: #f9fafb; /* Light background for dark theme */
-        color: #1f2937; /* Dark text for dark theme */
-    }
-    html.dark .sidebar-tooltip-wrapper[data-tooltip]::before {
-        border-right-color: #f9fafb;
-    }
 
     /* --- Custom Scrollbar (Global) --- */
     ::-webkit-scrollbar {
@@ -599,18 +423,6 @@
     }
     ::-webkit-scrollbar-thumb:hover {
         background-color: #818cf8; /* A bit darker on hover */
-    }
-
-    /* --- Sidebar Specific Scrollbar --- */
-    .sidebar nav::-webkit-scrollbar {
-        width: 1px;
-    }
-    .sidebar nav::-webkit-scrollbar-track {
-        background-color: transparent;
-    }
-    .sidebar nav::-webkit-scrollbar-thumb {
-        background-color: var(--sidebar-border);
-        border-radius: 1px;
     }
 
     /* --- Utility: Hide Scrollbar --- */
@@ -649,66 +461,6 @@
     }
     .animate-pulse-danger {
       animation: pulse-danger 2s infinite;
-    }
-
-    /* --- Agent Log Structured View Utilities --- */
-    .structured-view-panel {
-        background-color: var(--subtle-bg);
-        border: 1px solid var(--subtle-border);
-        border-radius: 0.5rem;
-        padding: 1rem;
-    }
-    .structured-view-panel.theme-aware-hover:hover {
-        filter: brightness(0.98);
-    }
-    html.dark .structured-view-panel.theme-aware-hover:hover {
-        filter: brightness(1.1);
-    }
-    .accent-text {
-        color: var(--accent-text);
-    }
-    .structured-list-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        border-radius: 0.375rem;
-        background-color: var(--subtle-bg);
-    }
-    
-    /* --- Settings & Architecture Page Connecting Line --- */
-    .connecting-line {
-        stroke-dasharray: 6 3;
-        animation: march 1s linear infinite;
-        opacity: 0.8;
-    }
-    @keyframes march {
-        to {
-            stroke-dashoffset: -9;
-        }
-    }
-
-    /* --- System Architecture Page Styles --- */
-    .port {
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        background-color: transparent;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-    }
-    /* Glow effect for architecture icons */
-    .glow-accent {
-        filter: drop-shadow(0 0 6px rgba(79, 70, 229, 0.7));
-    }
-    .glow-purple {
-        filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.7));
-    }
-    .glow-sky {
-        filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.7));
-    }
-    .glow-green {
-        filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.7));
     }
 
     </style>

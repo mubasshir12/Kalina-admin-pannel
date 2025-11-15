@@ -233,62 +233,100 @@ const SystemArchitecture: React.FC = () => {
     }, [drawLines]);
 
     return (
-        <div ref={containerRef} className="relative inline-flex flex-col items-center justify-between gap-20 p-12">
-            <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
-                <defs>
-                    <marker id="arrowhead-accent" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-color)" />
-                    </marker>
-                    <marker id="arrowhead-success" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="#22C55E" />
-                    </marker>
-                     <marker id="arrowhead-secondary" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="var(--sidebar-text-muted)" />
-                    </marker>
-                </defs>
-                {connections.map((_, i) => (
-                    <path
-                        key={i}
-                        ref={el => { if(el) pathRefs.current[i] = el; }}
-                        fill="none"
-                        strokeWidth="1.5"
-                        className="connecting-line transition-all duration-300"
-                    />
-                ))}
-            </svg>
+        <>
+            <style>{`
+                /* --- Settings & Architecture Page Connecting Line --- */
+                .connecting-line {
+                    stroke-dasharray: 6 3;
+                    animation: march 1s linear infinite;
+                    opacity: 0.8;
+                }
+                @keyframes march {
+                    to {
+                        stroke-dashoffset: -9;
+                    }
+                }
 
-            <div className="relative z-10 w-full flex flex-col items-center gap-20">
-                {/* --- TOP ROW: Frontends --- */}
-                <div className="flex justify-center items-start gap-24 w-full">
-                    <ArchitectureNode id="client-app" title="Client App" description="User-facing application" icon={<ClientAppIcon />} glowType="accent" textPosition="top" />
-                    <ArchitectureNode id="admin-panel" title="Admin Panel" description="Monitoring & configuration" icon={<AdminPanelIcon />} glowType="accent" textPosition="top" />
-                </div>
-                
-                {/* --- MIDDLE ROW: Services --- */}
-                <div className="flex justify-between items-start w-full max-w-6xl">
-                     <Group title="Supabase Edge Functions" className="w-[400px]">
-                        <div className="space-y-8 p-4 flex flex-col items-center">
-                            <ArchitectureNode id="agent-fn" title="Agent" description="Handles AI agent logic" icon={<SupabaseFunctionIcon />} glowType="purple" />
-                            <ArchitectureNode id="news-fn" title="News Updater" description="Fetches & formats articles" icon={<SupabaseFunctionIcon isNews />} glowType="purple" />
-                        </div>
-                    </Group>
+                /* --- System Architecture Page Styles --- */
+                .port {
+                    position: absolute;
+                    width: 10px;
+                    height: 10px;
+                    background-color: transparent;
+                    border-radius: 50%;
+                    transform: translate(-50%, -50%);
+                }
+                /* Glow effect for architecture icons */
+                .glow-accent {
+                    filter: drop-shadow(0 0 6px rgba(79, 70, 229, 0.7));
+                }
+                .glow-purple {
+                    filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.7));
+                }
+                .glow-sky {
+                    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.7));
+                }
+                .glow-green {
+                    filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.7));
+                }
+            `}</style>
+            <div ref={containerRef} className="relative inline-flex flex-col items-center justify-between gap-20 p-12">
+                <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
+                    <defs>
+                        <marker id="arrowhead-accent" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-color)" />
+                        </marker>
+                        <marker id="arrowhead-success" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#22C55E" />
+                        </marker>
+                        <marker id="arrowhead-secondary" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="var(--sidebar-text-muted)" />
+                        </marker>
+                    </defs>
+                    {connections.map((_, i) => (
+                        <path
+                            key={i}
+                            ref={el => { if(el) pathRefs.current[i] = el; }}
+                            fill="none"
+                            strokeWidth="1.5"
+                            className="connecting-line transition-all duration-300"
+                        />
+                    ))}
+                </svg>
+
+                <div className="relative z-10 w-full flex flex-col items-center gap-20">
+                    {/* --- TOP ROW: Frontends --- */}
+                    <div className="flex justify-center items-start gap-24 w-full">
+                        <ArchitectureNode id="client-app" title="Client App" description="User-facing application" icon={<ClientAppIcon />} glowType="accent" textPosition="top" />
+                        <ArchitectureNode id="admin-panel" title="Admin Panel" description="Monitoring & configuration" icon={<AdminPanelIcon />} glowType="accent" textPosition="top" />
+                    </div>
                     
-                    <Group title="External APIs" className="w-[400px]" titlePosition="right">
-                         <div className="space-y-8 p-4 flex flex-col items-center">
-                            <ArchitectureNode id="groq-api" title="Groq API" description="LLM for agent responses" icon={<GroqIcon />} glowType="sky" />
-                            <ArchitectureNode id="gnews-api" title="GNews API" description="Fetches news articles" icon={<GNewsIcon />} glowType="sky" />
-                            <ArchitectureNode id="gemini-api" title="Gemini API" description="Article summarization" icon={<GeminiIcon />} glowType="sky" />
-                        </div>
-                    </Group>
-                </div>
+                    {/* --- MIDDLE ROW: Services --- */}
+                    <div className="flex justify-between items-start w-full max-w-6xl">
+                        <Group title="Supabase Edge Functions" className="w-[400px]">
+                            <div className="space-y-8 p-4 flex flex-col items-center">
+                                <ArchitectureNode id="agent-fn" title="Agent" description="Handles AI agent logic" icon={<SupabaseFunctionIcon />} glowType="purple" />
+                                <ArchitectureNode id="news-fn" title="News Updater" description="Fetches & formats articles" icon={<SupabaseFunctionIcon isNews />} glowType="purple" />
+                            </div>
+                        </Group>
+                        
+                        <Group title="External APIs" className="w-[400px]" titlePosition="right">
+                            <div className="space-y-8 p-4 flex flex-col items-center">
+                                <ArchitectureNode id="groq-api" title="Groq API" description="LLM for agent responses" icon={<GroqIcon />} glowType="sky" />
+                                <ArchitectureNode id="gnews-api" title="GNews API" description="Fetches news articles" icon={<GNewsIcon />} glowType="sky" />
+                                <ArchitectureNode id="gemini-api" title="Gemini API" description="Article summarization" icon={<GeminiIcon />} glowType="sky" />
+                            </div>
+                        </Group>
+                    </div>
 
-                {/* --- BOTTOM ROW: Databases --- */}
-                 <div className="flex justify-center items-start gap-24 w-full">
-                     <ArchitectureNode id="db-main" title="Main App DB" description="Users, Content, Interactions" icon={<MainDbIcon />} glowType="green" />
-                     <ArchitectureNode id="db-agent" title="Agent DB" description="Logs & Agent Config" icon={<AgentDbIcon />} glowType="green" />
+                    {/* --- BOTTOM ROW: Databases --- */}
+                    <div className="flex justify-center items-start gap-24 w-full">
+                        <ArchitectureNode id="db-main" title="Main App DB" description="Users, Content, Interactions" icon={<MainDbIcon />} glowType="green" />
+                        <ArchitectureNode id="db-agent" title="Agent DB" description="Logs & Agent Config" icon={<AgentDbIcon />} glowType="green" />
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

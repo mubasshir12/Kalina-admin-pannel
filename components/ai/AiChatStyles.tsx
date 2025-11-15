@@ -125,10 +125,166 @@ const chatStyles = `
   0%, 80%, 100% { transform: scale(0); }
   40% { transform: scale(1.0); }
 }
+
+/* NEW: Themed styles for code blocks in chat */
+.chat-code-block {
+    background-color: var(--chat-code-header-bg);
+    color: var(--chat-code-text);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    position: relative;
+    font-size: 0.875rem;
+}
+.chat-code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    padding: 0.375rem 1rem;
+    background-color: var(--chat-code-bg);
+    color: var(--chat-code-header-text);
+}
+.chat-code-block-pre {
+    padding: 1rem;
+    overflow-x: auto;
+}
+.chat-code-block-code {
+    font-family: monospace;
+}
+.chat-code-copy-button {
+    opacity: 1 !important;
+    position: static !important;
+    background-color: transparent !important;
+    color: var(--chat-code-header-text) !important;
+}
+.chat-code-copy-button:hover {
+    background-color: var(--chat-code-copy-hover-bg) !important;
+}
+
+/* NEW: Theme-aware nav links inside chat */
+.chat-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    margin: 0.25rem 0;
+    background-color: var(--chat-link-bg);
+    color: var(--chat-link-text);
+    font-weight: 600;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: background-color 0.2s ease-in-out;
+    text-decoration: none;
+}
+.chat-nav-link:hover {
+    background-color: var(--chat-link-hover-bg);
+    text-decoration: none;
+}
+
+/* NEW: Theme-aware active session in dropdown */
+.chat-session-active {
+    background-color: var(--chat-active-item-bg);
+    color: var(--chat-active-item-text);
+}
+
+/* NEW: Centralized markdown content styles */
+.chat-markdown-content {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--chat-model-bubble-text);
+}
+.chat-markdown-content > *:last-child {
+    margin-bottom: 0;
+}
+.chat-markdown-content p {
+    margin-bottom: 1rem;
+}
+.chat-markdown-content strong {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.chat-markdown-content em {
+    font-style: italic;
+}
+.chat-markdown-content ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+.chat-markdown-content li {
+    margin-bottom: 0.25rem;
+}
+.chat-markdown-content h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+/* This is for inline code, distinct from code blocks */
+.chat-markdown-content code {
+    background-color: var(--chat-suggestion-bg);
+    color: var(--chat-suggestion-text);
+    font-family: monospace;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    border: 1px solid var(--border-color);
+}
+`;
+
+const chatThemeVariables = `
+:root {
+    --chat-bg: #f9fafb;
+    --chat-sidebar-bg: #ffffff;
+    --chat-input-bg: #ffffff;
+    --chat-user-bubble-bg: #4f46e5;
+    --chat-user-bubble-text: #ffffff;
+    --chat-model-bubble-bg: #ffffff;
+    --chat-model-bubble-text: #1f2937;
+    --chat-suggestion-bg: #f3f4f6;
+    --chat-suggestion-hover-bg: #e5e7eb;
+    --chat-suggestion-text: #4b5563;
+    --chat-code-bg: #f1f5f9;
+    --chat-code-header-bg: #e2e8f0;
+    --chat-code-text: #1e293b;
+    --chat-code-header-text: #475569;
+    --chat-code-copy-hover-bg: #cbd5e1;
+    --dropdown-footer-bg: #f9fafb;
+    --chat-link-bg: #e0e7ff;
+    --chat-link-text: #4338ca;
+    --chat-link-hover-bg: #c7d2fe;
+    --chat-active-item-bg: #e0e7ff;
+    --chat-active-item-text: #3730a3;
+}
+
+html.dark {
+    --chat-bg: #1f2937;
+    --chat-sidebar-bg: #1f2937;
+    --chat-input-bg: #27272A;
+    --chat-user-bubble-bg: #4f46e5;
+    --chat-user-bubble-text: #ffffff;
+    --chat-model-bubble-bg: #27272A;
+    --chat-model-bubble-text: #f4f4f5;
+    --chat-suggestion-bg: #3f3f46;
+    --chat-suggestion-hover-bg: #52525b;
+    --chat-suggestion-text: #d4d4d8;
+    --chat-code-bg: #1e293b;
+    --chat-code-header-bg: #0f172a;
+    --chat-code-text: #e2e8f0;
+    --chat-code-header-text: #94a3b8;
+    --chat-code-copy-hover-bg: #334155;
+    --dropdown-footer-bg: rgba(39, 39, 42, 0.5);
+    --chat-link-bg: rgba(99, 102, 241, 0.2);
+    --chat-link-text: #a5b4fc;
+    --chat-link-hover-bg: rgba(99, 102, 241, 0.3);
+    --chat-active-item-bg: rgba(99, 102, 241, 0.25);
+    --chat-active-item-text: #c7d2fe;
+}
 `;
 
 const AiChatStyles: React.FC = () => {
-    return <style>{chatStyles}</style>;
+    return <style>{chatThemeVariables + chatStyles}</style>;
 };
 
 export default AiChatStyles;

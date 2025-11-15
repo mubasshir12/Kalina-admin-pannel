@@ -171,7 +171,6 @@ const handleGetAnalyticsData = async (section: string) => {
     }
 };
 
-
 // --- Core Chat Processing Logic (Streaming) ---
 
 const routerSystemInstruction = `You are a specialized AI agent for the Kalina AI admin dashboard. Your single purpose is to determine if a user's request requires fetching live, numerical data from the database. You have one tool: 'get_analytics_data'.
@@ -186,7 +185,34 @@ const routerSystemInstruction = `You are a specialized AI agent for the Kalina A
 
 const MAX_RETRIES = 5; // Max number of keys to try before giving up
 
-export async function* processUserMessageStream(userInput: string, sessionId: string, history: any[]) {
+const timeAgoFromUserTime = (activityTimestamp: string, userTimestamp: string): string => {
+    const activityDate = new Date(activityTimestamp);
+    const userDate = new Date(userTimestamp);
+    if (isNaN(activityDate.getTime()) || isNaN(userDate.getTime())) return 'Invalid date';
+
+    const seconds = Math.floor((userDate.getTime() - activityDate.getTime()) / 1000);
+
+    if (seconds < 5) return "just now";
+    if (seconds < 60) return `${Math.floor(seconds)} seconds ago`;
+    
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days} day${days > 1 ? 's' : ''} ago`;
+
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months} month${months > 1 ? 's' : ''} ago`;
+
+    const years = Math.floor(days / 365);
+    return `${years} year${years > 1 ? 's' : ''} ago`;
+};
+
+
+export async function* processUserMessageStream(userInput: string, sessionId: string, history: any[], userTimestamp: string) {
     
     yield { type: 'thinking' };
 
@@ -244,6 +270,19 @@ export async function* processUserMessageStream(userInput: string, sessionId: st
                 });
 
                 const functionResponseParts = await Promise.all(toolExecutionPromises);
+                
+                // --- NEW: Intercept and process the tool results before sending back to the model ---
+                functionResponseParts.forEach(part => {
+                    const result = part.functionResponse.response.result as any;
+                    // Check if the tool result contains recent activity data
+                    if (result && Array.isArray(result.recentActivity)) {
+                        // If so, add the 'time_ago_string' to each activity object
+                        result.recentActivity = result.recentActivity.map((activity: any) => ({
+                            ...activity,
+                            time_ago_string: timeAgoFromUserTime(activity.timestamp, userTimestamp),
+                        }));
+                    }
+                });
                 
                 yield { type: 'generating' };
 

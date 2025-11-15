@@ -281,6 +281,18 @@ const SettingsPage: React.FC = () => {
     
     const renderDbManagementView = () => (
         <>
+            <style>{`
+                .connecting-line {
+                    stroke-dasharray: 6 3;
+                    animation: march 1s linear infinite;
+                    opacity: 0.8;
+                }
+                @keyframes march {
+                    to {
+                        stroke-dashoffset: -9;
+                    }
+                }
+            `}</style>
             <svg className="hidden md:block fixed top-0 left-0 w-full h-full pointer-events-none z-10">
                 <path
                     ref={headerLinePathRef}
