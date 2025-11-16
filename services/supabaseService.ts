@@ -1,6 +1,4 @@
 
-
-
 import { createClient } from '@supabase/supabase-js';
 // FIX: Import AdvancedAnalyticsData type
 import type { AgentLog, NewsLog, AgentConfig, NewsConfig, MainDashboardData, UserStats, ArticleEngagementData, AdvancedAnalyticsData, BarDataPoint, TrendDataPoint, ChatMessage } from '../types';
@@ -169,13 +167,15 @@ export async function fetchUsersData(): Promise<UserStats[]> {
 
     return authUsers.users.map(user => {
         const profile = profilesMap.get(user.id);
-        // FIX: Supabase's user.user_metadata is `unknown`. We must cast it to a known shape to safely access properties like `full_name` and `avatar_url`.
-        const metadata = (user.user_metadata as { full_name?: string; avatar_url?: string; }) || {};
+        // FIX: Supabase's user.user_metadata can be 'unknown' or 'null'. Cast it to a known shape after ensuring it's not null.
+        // We use optional chaining for `metadata` to safely access properties, as `user_metadata` itself can be null.
+        const metadata = user.user_metadata as ({ full_name?: string; avatar_url?: string; } | null);
+
         return {
             user: {
                 id: user.id,
-                full_name: profile?.full_name || metadata.full_name || 'N/A',
-                avatar_url: profile?.avatar_url || metadata.avatar_url || '',
+                full_name: profile?.full_name || metadata?.full_name || 'N/A',
+                avatar_url: profile?.avatar_url || metadata?.avatar_url || '',
                 email: user.email || 'N/A',
                 created_at: user.created_at,
             },

@@ -86,6 +86,13 @@ const ChatHistoryDropdown: React.FC<{
         onClose();
     };
 
+    const handleNewChat = () => {
+        // A new session ID is generated, and we navigate directly to it.
+        const newSid = crypto.randomUUID();
+        navigate(`/ai-chat#session=${newSid}`);
+        onClose();
+    };
+
     // Grouping logic
     const { today, yesterday, older } = React.useMemo(() => {
         const groups: { today: ChatSession[], yesterday: ChatSession[], older: ChatSession[] } = { today: [], yesterday: [], older: [] };
@@ -196,13 +203,12 @@ const ChatHistoryDropdown: React.FC<{
                     >
                         <Settings size={16} /> Manage Keys
                     </button>
-                    <Link
-                        to="/ai-chat"
-                        onClick={onClose}
+                    <button
+                        onClick={handleNewChat}
                         className="btn btn-primary !py-2 !px-3 text-xs whitespace-nowrap"
                     >
                         <PlusCircle size={16} /> New Chat
-                    </Link>
+                    </button>
                 </div>
             </div>
         </div>

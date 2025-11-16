@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 const chatStyles = `
@@ -34,7 +35,7 @@ const chatStyles = `
 .chat-messages-container {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 1.5rem 1rem;
+    padding: 5.5rem 1rem 1.5rem 1rem; /* Adjusted padding-top to account for fixed header (h-16 = 64px + 24px initial gap) */
 }
 
 .chat-welcome-view {
@@ -109,6 +110,10 @@ const chatStyles = `
 .chat-command-bar textarea::placeholder {
     color: var(--text-secondary);
 }
+.placeholder-text-xs::placeholder { /* NEW: Smaller placeholder text */
+    font-size: 0.75rem; /* text-xs in Tailwind */
+}
+
 
 .thinking-dots span {
   display: inline-block;

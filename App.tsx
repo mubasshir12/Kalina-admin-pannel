@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useEffect, Component, ErrorInfo, ReactNode, Suspense } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Zap, X, AlertTriangle } from 'lucide-react';
@@ -44,8 +43,10 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         console.error("Kalina AI - Uncaught Application Error:", error, errorInfo);
     }
 
-    // FIX: Changed from an arrow function property to a standard class method. React's component lifecycle guarantees the correct `this` context for `render`, and this canonical syntax avoids potential TypeScript inference issues.
-    render(): ReactNode {
+    // FIX: To ensure `this` context and `this.props` are correctly inferred in strict TypeScript environments,
+    // explicitly type `this` in the render method if the compiler struggles.
+    // However, for a standard React class component, `this.props` is typically available by default.
+    render(this: ErrorBoundary): ReactNode {
         if (this.state.hasError) {
             // Render a fallback UI when an error is caught
             return (
@@ -145,7 +146,7 @@ const PageLayout: React.FC<{ theme: string, toggleTheme: () => void }> = ({ them
                 />
                 
                 {/* Main Content */}
-                <main className={`flex-1 pt-20 ${isChatPage ? 'flex flex-col overflow-hidden' : 'overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8'}`}>
+                <main className={`flex-1 ${isChatPage ? 'flex flex-col overflow-hidden' : 'pt-20 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8'}`}>
                     <Suspense fallback={<LoadingSpinner />}>
                         <Routes>
                             <Route path="/" element={<MainDashboard />} />

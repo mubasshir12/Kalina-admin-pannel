@@ -38,7 +38,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ input, setInput, handleSendMessag
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(input); } }}
                     placeholder="Ask about dashboard stats, users, agents..."
-                    className="w-full"
+                    className="w-full placeholder-text-xs" // Added placeholder-text-xs class
                     rows={1}
                     disabled={isLoading}
                     style={{ overflowY: 'hidden' }} // Start with hidden scrollbar

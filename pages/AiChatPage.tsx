@@ -198,24 +198,33 @@ const AiChatPage: React.FC = () => {
 
     const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
-    // Effect to manage session ID from URL
+    // Effect to manage session ID from URL. This is the single source of truth for the session.
     useEffect(() => {
         const hash = location.hash;
-        let sidFromUrl: string | null = null;
-        if (hash && hash.startsWith('#session=')) {
-            sidFromUrl = hash.substring('#session='.length);
-        }
-        
+        const sidFromUrl = (hash && hash.startsWith('#session='))
+            ? hash.substring('#session='.length)
+            : null;
+
         if (sidFromUrl) {
+            // A session ID exists in the URL.
+            // If it's different from our current state, update the component's session state.
             if (sessionId !== sidFromUrl) {
                 setSessionId(sidFromUrl);
             }
-        } else if (location.pathname === '/ai-chat' && !sessionId) {
-             const newSid = crypto.randomUUID();
-            // Using a timeout to ensure this navigation doesn't conflict with initial render cycles.
-            setTimeout(() => navigate(`/ai-chat#session=${newSid}`, { replace: true }), 0);
+        } else {
+            // No session ID in the URL. This means we must start a new chat.
+            // This case handles the initial page load and also when a user is navigated
+            // here after deleting the active session (which navigates to '/ai-chat').
+            if (location.pathname === '/ai-chat') {
+                const newSid = crypto.randomUUID();
+                // Use `replace: true` to avoid polluting browser history with intermediate states.
+                navigate(`/ai-chat#session=${newSid}`, { replace: true });
+            }
         }
-    }, [location.hash, location.pathname, navigate, sessionId]);
+    // IMPORTANT: `sessionId` is intentionally omitted from the dependency array.
+    // This effect should only react to URL changes, not its own state updates,
+    // preventing potential re-render loops and making the logic clearer.
+    }, [location.hash, location.pathname, navigate]);
 
 
     // Effect to fetch chat history when session ID changes
